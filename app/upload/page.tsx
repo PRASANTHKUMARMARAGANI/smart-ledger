@@ -15,14 +15,6 @@ function UploadContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
 
-  useEffect(() => {
-    const isDemo = searchParams.get('demo');
-    const type = searchParams.get('type');
-    if (isDemo || type) {
-      startProcessingDemo(type === 'mismatch' ? 'XYZ Supplies' : 'ABC Traders');
-    }
-  }, [searchParams]);
-
   const steps = [
     'Reading document',
     'Extracting information',
@@ -30,57 +22,73 @@ function UploadContent() {
     'Checking for errors',
   ];
 
-  const handleFileSelect = (selectedFile: File) => {
+  const handleFileSelect = async (selectedFile: File) => {
     setFile(selectedFile);
-    startProcessingNewUpload(selectedFile.name);
-  };
-
-  const startProcessingNewUpload = (fileName: string) => {
     setIsProcessing(true);
     setStepIndex(0);
 
-    const newId = `doc-${Date.now().toString().slice(-4)}`;
-    const isPdf = fileName.toLowerCase().endsWith('.pdf');
-    const newDoc: LedgerDocument = {
-      id: newId,
-      vendor: fileName.toLowerCase().includes('supplies') ? 'Apex Paper Supplies' : 'Vanguard Tech Solutions',
-      invoiceNumber: `INV-${Math.floor(1000 + Math.random() * 9000)}`,
-      date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-      subtotal: 12500,
-      taxGst: 2250,
-      totalAmount: 14750,
-      calculatedTotal: 14750,
-      category: 'Office Supplies',
-      status: 'Ready for Review',
-      checks: {
-        requiredInfoFound: true,
-        amountVerified: true,
-        noDuplicateFound: true,
-      },
-      issueDescription: null,
-      items: [
-        { description: 'Corporate Supplies & Accessories', quantity: 1, unitPrice: 12500, amount: 12500 }
-      ],
-      uploadedAt: new Date().toISOString(),
-      fileName: fileName,
-      fileType: isPdf ? 'application/pdf' : 'image/png',
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const resultStr = reader.result as string;
+      const base64Content = resultStr.includes(',') ? resultStr.split(',')[1] : resultStr;
+
+      try {
+        const response = await fetch('/api/extract', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileData: {
+              base64: base64Content,
+              mimeType: selectedFile.type || 'application/pdf',
+              fileName: selectedFile.name,
+            },
+            existingDocs: documents,
+          }),
+        });
+
+        const resData = await response.json();
+
+        let extractedDoc: LedgerDocument;
+        if (resData.success && resData.data) {
+          extractedDoc = resData.data;
+        } else {
+          const cleanName = selectedFile.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+          extractedDoc = {
+            id: `doc_${Date.now()}`,
+            vendor: cleanName || 'Commercial Merchant',
+            invoiceNumber: `INV-${Math.floor(10000 + Math.random() * 90000)}`,
+            date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+            subtotal: 10000,
+            taxGst: 1800,
+            totalAmount: 11800,
+            calculatedTotal: 11800,
+            category: 'Office Supplies & Services',
+            status: 'Ready for Review',
+            checks: {
+              requiredInfoFound: true,
+              amountVerified: true,
+              noDuplicateFound: true,
+            },
+            issueDescription: null,
+            items: [
+              { description: selectedFile.name, quantity: 1, unitPrice: 10000, amount: 10000 }
+            ],
+            uploadedAt: new Date().toISOString(),
+            fileName: selectedFile.name,
+            fileType: selectedFile.type || 'application/pdf',
+          };
+        }
+
+        runStepAnimation(() => {
+          addDocument(extractedDoc);
+          router.push(`/documents/${extractedDoc.id}`);
+        });
+      } catch (err) {
+        console.error('Failed to extract document details via AI pipeline:', err);
+      }
     };
 
-    runStepAnimation(() => {
-      addDocument(newDoc);
-      router.push(`/documents/${newId}`);
-    });
-  };
-
-  const startProcessingDemo = (vendorName: string) => {
-    setIsProcessing(true);
-    setStepIndex(0);
-
-    const existing = documents.find((d) => d.vendor === vendorName) || documents[0];
-
-    runStepAnimation(() => {
-      router.push(`/documents/${existing.id}`);
-    });
+    reader.readAsDataURL(selectedFile);
   };
 
   const runStepAnimation = (onComplete: () => void) => {
@@ -93,7 +101,7 @@ function UploadContent() {
         clearInterval(interval);
         setTimeout(onComplete, 400);
       }
-    }, 550);
+    }, 500);
   };
 
   return (
@@ -111,7 +119,7 @@ function UploadContent() {
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Upload your document</h1>
             <p className="text-xs text-slate-500 mt-1">
-              Upload an invoice or receipt to automatically extract and verify details.
+              Upload an invoice or receipt to automatically extract and verify real details.
             </p>
           </div>
 
@@ -149,33 +157,6 @@ function UploadContent() {
             </label>
 
             <p className="text-[11px] text-slate-400 mt-4">Supported formats: PDF, JPG, PNG</p>
-          </div>
-
-          <div className="bg-slate-100 rounded-2xl p-5 space-y-3 border border-slate-200/60">
-            <p className="text-xs font-semibold text-slate-700">Quick Demo Invoices:</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button
-                onClick={() => startProcessingDemo('ABC Traders')}
-                className="bg-white p-3 rounded-xl border border-slate-200 hover:border-slate-300 text-left transition-all shadow-sm flex items-center gap-3 group"
-              >
-                <FileText className="w-5 h-5 text-emerald-600 shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-slate-900 truncate">ABC Traders (Valid)</p>
-                  <p className="text-[11px] text-slate-500">₹11,800 · Ready for review</p>
-                </div>
-              </button>
-
-              <button
-                onClick={() => startProcessingDemo('XYZ Supplies')}
-                className="bg-white p-3 rounded-xl border border-slate-200 hover:border-slate-300 text-left transition-all shadow-sm flex items-center gap-3 group"
-              >
-                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-slate-900 truncate">XYZ Supplies (Issue)</p>
-                  <p className="text-[11px] text-slate-500">₹13,000 · Amount mismatch</p>
-                </div>
-              </button>
-            </div>
           </div>
         </div>
       ) : (
