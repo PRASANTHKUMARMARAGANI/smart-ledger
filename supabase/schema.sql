@@ -6,7 +6,7 @@
 -- Enable UUID extension
 create extension if not exists "uuid-ossp";
 
--- Documents table
+-- 1. Documents table
 create table if not exists public.documents (
   id text primary key,
   vendor text not null,
@@ -27,9 +27,25 @@ create table if not exists public.documents (
   created_at timestamp with time zone default now()
 );
 
--- Enable Row Level Security (RLS)
+-- Enable RLS for documents
 alter table public.documents enable row level security;
 
--- Policy allowing authenticated & anon users for hackathon demo
 create policy "Allow read and write for documents" on public.documents
+  for all using (true) with check (true);
+
+-- 2. Registered Users table
+create table if not exists public.users (
+  id text primary key,
+  email text unique not null,
+  password text not null,
+  full_name text not null,
+  role text not null,
+  is_verified boolean default true,
+  created_at timestamp with time zone default now()
+);
+
+-- Enable RLS for users
+alter table public.users enable row level security;
+
+create policy "Allow read and write for users" on public.users
   for all using (true) with check (true);

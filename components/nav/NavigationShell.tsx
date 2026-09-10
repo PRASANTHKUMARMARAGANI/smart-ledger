@@ -1,16 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useDocuments } from '@/lib/store';
-import { Home, FileText, AlertCircle, Receipt, LogOut, Sparkles, Check, Bot, Activity, CreditCard, ShieldCheck } from 'lucide-react';
+import { Home, FileText, AlertCircle, Receipt, LogOut } from 'lucide-react';
 
 export const NavigationShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
   const router = useRouter();
-  const { stats, resetDemoData } = useDocuments();
-  const [showResetToast, setShowResetToast] = useState(false);
+  const { stats } = useDocuments();
 
   // If on login page, don't show main navigation layout shell
   if (pathname === '/' || pathname === '/login') {
@@ -31,19 +30,6 @@ export const NavigationShell: React.FC<{ children: React.ReactNode }> = ({ child
     { name: 'Transactions', href: '/transactions', icon: Receipt },
   ];
 
-  const advancedItems = [
-    { name: 'Agent Operations', href: '/agents', icon: Bot },
-    { name: 'AI Evaluation', href: '/eval', icon: Activity },
-    { name: 'SaaS Billing', href: '/billing', icon: CreditCard },
-    { name: 'Security & Audit', href: '/security', icon: ShieldCheck },
-  ];
-
-  const handleResetData = () => {
-    resetDemoData();
-    setShowResetToast(true);
-    setTimeout(() => setShowResetToast(false), 2500);
-  };
-
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col md:flex-row antialiased font-sans">
       {/* Sidebar Navigation for Desktop */}
@@ -60,7 +46,7 @@ export const NavigationShell: React.FC<{ children: React.ReactNode }> = ({ child
                   SmartLedger
                 </span>
                 <span className="text-[11px] text-slate-500 font-medium block">
-                  AI Accounting Assistant
+                  AI Accounting Platform
                 </span>
               </div>
             </Link>
@@ -69,7 +55,7 @@ export const NavigationShell: React.FC<{ children: React.ReactNode }> = ({ child
           {/* Main Navigation Links */}
           <nav className="p-4 space-y-1">
             <div className="px-3 py-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-              Core Platform
+              Navigation
             </div>
             {navItems.map((item) => {
               const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
@@ -100,42 +86,11 @@ export const NavigationShell: React.FC<{ children: React.ReactNode }> = ({ child
                 </Link>
               );
             })}
-
-            <div className="pt-4 px-3 py-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-              Enterprise & AI Ops
-            </div>
-            {advancedItems.map((item) => {
-              const isActive = pathname === item.href;
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium transition-all ${
-                    isActive
-                      ? 'bg-indigo-50 text-indigo-700 font-semibold border border-indigo-200/60'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
-                  <span>{item.name}</span>
-                </Link>
-              );
-            })}
           </nav>
         </div>
 
         {/* Bottom Profile & Actions */}
         <div className="p-4 border-t border-slate-100 space-y-3">
-          {/* Quick Hackathon Reset Data option */}
-          <button
-            onClick={handleResetData}
-            className="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium transition-colors flex items-center justify-center gap-1.5"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Reset Demo Data</span>
-          </button>
-
           {/* User Profile Card */}
           <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -180,14 +135,6 @@ export const NavigationShell: React.FC<{ children: React.ReactNode }> = ({ child
           {children}
         </main>
       </div>
-
-      {/* Toast feedback */}
-      {showResetToast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl text-xs font-medium flex items-center gap-2 border border-slate-800 animate-fadeIn">
-          <Check className="w-4 h-4 text-emerald-400" />
-          <span>Demo document state reset successfully!</span>
-        </div>
-      )}
     </div>
   );
 };
