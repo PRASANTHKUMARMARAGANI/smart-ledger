@@ -99,9 +99,9 @@ function UploadContent() {
         setStepIndex(current);
       } else {
         clearInterval(interval);
-        setTimeout(onComplete, 400);
+        setTimeout(onComplete, 150);
       }
-    }, 500);
+    }, 150);
   };
 
   return (
