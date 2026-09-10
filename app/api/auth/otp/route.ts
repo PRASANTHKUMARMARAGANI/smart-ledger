@@ -55,14 +55,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3. Try Nodemailer SMTP
+    // 2. Try Nodemailer SMTP (with dual-port 587 & 465 SSL cloud fallback for Railway)
     const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
     const smtpPort = parseInt(process.env.SMTP_PORT || '587');
     const smtpUser = process.env.SMTP_USER;
     const smtpPass = process.env.SMTP_PASS;
 
     if (smtpUser && smtpPass) {
+      // First attempt with configured port
       try {
+        console.log(`[SMTP RAILWAY DISPATCH] Attempting send via ${smtpHost}:${smtpPort} for ${email}...`);
         const transporter = nodemailer.createTransport({
           host: smtpHost,
           port: smtpPort,
@@ -74,8 +76,8 @@ export async function POST(req: NextRequest) {
           tls: {
             rejectUnauthorized: false,
           },
-          connectionTimeout: 10000,
-          socketTimeout: 10000,
+          connectionTimeout: 15000,
+          socketTimeout: 15000,
         });
 
         await transporter.sendMail({
@@ -85,9 +87,43 @@ export async function POST(req: NextRequest) {
           html: emailHtml,
         });
 
+        console.log(`[SMTP RAILWAY SUCCESS] Sent OTP email to ${email} via port ${smtpPort}`);
         delivered = true;
       } catch (smtpErr) {
-        console.error('[SMTP DISPATCH ERROR]', smtpErr);
+        console.warn(`[SMTP PORT ${smtpPort} NOTICE]`, (smtpErr as Error).message);
+
+        // Secondary fallback to SSL port 465 if primary port 587 was blocked by datacenter firewall
+        if (!delivered && smtpPort !== 465) {
+          try {
+            console.log(`[SMTP RAILWAY FALLBACK] Attempting SSL send via ${smtpHost}:465...`);
+            const fallbackTransporter = nodemailer.createTransport({
+              host: smtpHost,
+              port: 465,
+              secure: true,
+              auth: {
+                user: smtpUser,
+                pass: smtpPass,
+              },
+              tls: {
+                rejectUnauthorized: false,
+              },
+              connectionTimeout: 15000,
+              socketTimeout: 15000,
+            });
+
+            await fallbackTransporter.sendMail({
+              from: `"SmartLedger Security" <${smtpUser}>`,
+              to: email,
+              subject: `[SmartLedger] Your 6-Digit Real-Time Verification Code: ${code}`,
+              html: emailHtml,
+            });
+
+            console.log(`[SMTP RAILWAY SUCCESS] Sent OTP email to ${email} via SSL port 465 fallback`);
+            delivered = true;
+          } catch (fallbackErr) {
+            console.error('[SMTP RAILWAY FALLBACK ERROR]', (fallbackErr as Error).message);
+          }
+        }
       }
     }
 
