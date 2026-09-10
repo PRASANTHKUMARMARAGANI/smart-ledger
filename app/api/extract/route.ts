@@ -54,8 +54,25 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 4. Run Multi-Agent Execution Pipeline
-    const pipelineResult = await runMultiAgentPipeline(fileData, existingDocs || [], apiKey);
+    // 4. Run Local Multi-Agent Extraction Pipeline
+    const pipelineResult = await runMultiAgentPipeline(fileData, existingDocs || []);
+
+    // 5. Supabase Production Storage & PostgreSQL Persistence
+    const { uploadFileToSupabaseStorage, saveDocumentToSupabase } = await import('@/lib/supabase');
+
+    if (fileData && fileData.base64) {
+      const storageUrl = await uploadFileToSupabaseStorage(
+        fileData.fileName || 'invoice.pdf',
+        fileData.base64,
+        fileData.mimeType || 'application/pdf'
+      );
+      if (storageUrl) {
+        pipelineResult.document.fileUrl = storageUrl;
+      }
+    }
+
+    // Persist document to Supabase PostgreSQL
+    await saveDocumentToSupabase(pipelineResult.document);
 
     return NextResponse.json({
       success: true,

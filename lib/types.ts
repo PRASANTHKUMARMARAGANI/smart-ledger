@@ -1,4 +1,4 @@
-export type DocumentStatus = 'Ready for Review' | 'Needs Review' | 'Approved' | 'Rejected';
+export type DocumentStatus = 'VERIFIED' | 'Needs Review' | 'DUPLICATE' | 'Extraction Failed' | 'Approved' | 'Rejected' | 'Ready for Review' | 'Verified' | 'Duplicate';
 
 export interface DocumentCheck {
   requiredInfoFound: boolean;
@@ -8,7 +8,7 @@ export interface DocumentCheck {
 
 export interface InvoiceItem {
   description: string;
-  hsnSac?: string;
+  hsnSac?: string | null;
   quantity: number;
   unitPrice: number;
   amount: number;

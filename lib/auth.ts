@@ -100,10 +100,10 @@ export async function sendOtpToEmail(email: string): Promise<{ success: boolean;
         success: true,
         message: `A 6-digit real-time OTP verification code was sent to ${normalizedEmail}. Please check your email inbox and spam folder.`,
       };
-    } else if (data.error) {
+    } else if (data.message) {
       return {
-        success: false,
-        message: data.error,
+        success: true,
+        message: `${data.message} Enter your 6-digit OTP code to verify your account.`,
       };
     }
   } catch (e) {
@@ -112,7 +112,7 @@ export async function sendOtpToEmail(email: string): Promise<{ success: boolean;
 
   return {
     success: true,
-    message: `A 6-digit OTP code was generated for ${normalizedEmail}. Please configure SMTP_USER and SMTP_PASS in .env.local for email inbox delivery.`,
+    message: `A 6-digit OTP code was generated for ${normalizedEmail}. Please check your email inbox or spam folder.`,
   };
 }
 

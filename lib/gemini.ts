@@ -1,412 +1,278 @@
 import { LedgerDocument } from './types';
 
 /**
- * SmartLedger Gemini AI Document Extraction Service
+ * SmartLedger Gemini AI Real Document Extraction Engine
+ * Zero hardcoded fallback values. Strictly parses actual uploaded document.
  */
 
 export interface GeminiExtractionResult {
-  vendor: string;
-  vendorAddress?: string;
-  vendorGstin?: string;
-  vendorPhone?: string;
-  vendorEmail?: string;
-  invoiceNumber: string;
-  date: string;
-  dueDate?: string;
-  poNumber?: string;
-  paymentTerms?: string;
-  billToCustomer?: string;
-  billToAddress?: string;
-  billToGstin?: string;
+  vendorName: string | null;
+  vendorAddress: string | null;
+  vendorGstin: string | null;
+  vendorPhone: string | null;
+  vendorEmail: string | null;
+  invoiceNumber: string | null;
+  invoiceDate: string | null;
+  dueDate: string | null;
+  poNumber: string | null;
+  paymentTerms: string | null;
+  billToCustomer: string | null;
+  billToAddress: string | null;
+  billToGstin: string | null;
+  shipToCustomer: string | null;
+  shipToAddress: string | null;
+  shipToGstin: string | null;
   subtotal: number;
-  taxGst: number;
-  taxLabel?: string;
+  taxLabel: string | null;
+  taxRate: number;
+  taxAmount: number;
   totalAmount: number;
-  calculatedTotal: number;
-  amountInWords?: string;
+  amountInWords: string | null;
+  currency: string;
+  notes: string | null;
+  signatory: string | null;
   category: string;
-  issueDescription: string | null;
-  notes?: string;
-  signatory?: string;
   items: Array<{
     description: string;
-    hsnSac?: string;
+    hsnSac: string | null;
     quantity: number;
     unitPrice: number;
     amount: number;
   }>;
 }
 
-const GEMINI_API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+export interface ExtractionResponse {
+  success: boolean;
+  data?: GeminiExtractionResult;
+  error?: string;
+  code?: string;
+}
+
+const GEMINI_API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent';
 
 /**
- * Extract document details using Gemini AI API
- * @param fileData base64 encoded document image/pdf or file details
- * @param apiKey Google Gemini API Key (optional, defaults to process.env.GEMINI_API_KEY)
+ * Validates whether a key looks like a valid Google Gemini API Key
+ */
+function isValidGeminiApiKey(key?: string): boolean {
+  if (!key) return false;
+  const trimmed = key.trim();
+  if (trimmed.length < 15) return false;
+  if (trimmed.includes('demo_key') || trimmed.includes('your_gemini_api_key')) return false;
+  return true;
+}
+
+/**
+ * Extract document details using Gemini AI API with strict schema enforcement
  */
 export async function extractDocumentWithGemini(
   fileData?: { base64: string; mimeType: string; fileName: string },
   apiKey?: string
-): Promise<GeminiExtractionResult> {
-  const activeKey = apiKey || process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+): Promise<ExtractionResponse> {
+  const activeKey = (apiKey || process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || '').trim();
 
-  if (activeKey && fileData) {
-    try {
-      const response = await fetch(`${GEMINI_API_ENDPOINT}?key=${activeKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: `You are SmartLedger's expert document extraction AI. Analyze this invoice or receipt and extract structured accounting data in strict JSON format:
-                  {
-                    "vendor": "Vendor or Supplier Name",
-                    "vendorAddress": "Vendor Street, City, State, Pincode",
-                    "vendorGstin": "GSTIN (e.g. 29ABCDE1234F1Z5)",
-                    "vendorPhone": "Phone number",
-                    "vendorEmail": "Email address",
-                    "invoiceNumber": "Invoice Number (e.g. STS-2025-1042)",
-                    "date": "Document Date (e.g. 15 Oct 2025)",
-                    "dueDate": "Payment Due Date",
-                    "poNumber": "PO Number",
-                    "paymentTerms": "Payment Terms (e.g. Net 15 Days)",
-                    "billToCustomer": "Billed Customer Name",
-                    "billToAddress": "Billed Customer Address",
-                    "billToGstin": "Billed Customer GSTIN",
-                    "subtotal": 14000,
-                    "taxGst": 2520,
-                    "taxLabel": "IGST (18%)",
-                    "totalAmount": 16520,
-                    "amountInWords": "Indian Rupees Sixteen Thousand Five Hundred Twenty Only",
-                    "category": "Software & Cloud Services",
-                    "notes": "Payment notes and instructions",
-                    "signatory": "Authorized Signatory Name",
-                    "items": [
-                      { "description": "Item description", "hsnSac": "998315", "quantity": 2, "unitPrice": 5000, "amount": 10000 }
-                    ]
-                  }
-                  Respond ONLY with valid JSON.`
-                },
-                {
-                  inlineData: {
-                    mimeType: fileData.mimeType,
-                    data: fileData.base64
-                  }
-                }
-              ]
-            }
-          ]
-        })
-      });
-
-      if (response.ok) {
-        const json = await response.json();
-        const rawText = json.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (rawText) {
-          const cleanedText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-          const parsed = JSON.parse(cleanedText);
-
-          const calcTotal = (parsed.subtotal || 0) + (parsed.taxGst || 0);
-          const hasMismatch = Math.abs(calcTotal - (parsed.totalAmount || 0)) > 1;
-
-          return {
-            vendor: parsed.vendor || 'SkyTech Solutions Pvt. Ltd.',
-            vendorAddress: parsed.vendorAddress || '123 Innovation Drive, Koramangala, Bengaluru, Karnataka 560034, India',
-            vendorGstin: parsed.vendorGstin || '29ABCDE1234F1Z5',
-            vendorPhone: parsed.vendorPhone || '+91 80 4567 8900',
-            vendorEmail: parsed.vendorEmail || 'billing@skytechsolutions.com',
-            invoiceNumber: parsed.invoiceNumber || 'STS-2025-1042',
-            date: parsed.date || '15 Oct 2025',
-            dueDate: parsed.dueDate || '30 Oct 2025',
-            poNumber: parsed.poNumber || 'PO-77891',
-            paymentTerms: parsed.paymentTerms || 'Net 15 Days',
-            billToCustomer: parsed.billToCustomer || 'Acme Retail Pvt. Ltd.',
-            billToAddress: parsed.billToAddress || '45, MG Road, Indiranagar, Bengaluru, Karnataka 560038, India',
-            billToGstin: parsed.billToGstin || '29AABCA9876K1Z1',
-            subtotal: parsed.subtotal || 14000,
-            taxGst: parsed.taxGst || 2520,
-            taxLabel: parsed.taxLabel || 'IGST (18%)',
-            totalAmount: parsed.totalAmount || 16520,
-            calculatedTotal: calcTotal,
-            amountInWords: parsed.amountInWords || 'Indian Rupees Sixteen Thousand Five Hundred Twenty Only',
-            category: parsed.category || 'Software & Cloud Services',
-            issueDescription: hasMismatch
-              ? `Amount mismatch: Invoice total is ₹${parsed.totalAmount} but calculated total is ₹${calcTotal}`
-              : null,
-            notes: parsed.notes || '1. Please make the payment within the due date.\n2. For any billing queries, contact billing@skytechsolutions.com.',
-            signatory: parsed.signatory || 'Rohan Mehta, Authorized Signatory',
-            items: parsed.items || [],
-          };
-        }
-      }
-    } catch (error) {
-      console.warn('Gemini API call failed, falling back to local OCR extraction rule engine', error);
-    }
-  }
-
-  // 2. Ultra-Fast Zero-Latency Real Text & Schema Extraction Engine
-  let textStream = '';
-  if (fileData?.base64) {
-    try {
-      const binary = atob(fileData.base64);
-      for (let i = 0; i < Math.min(binary.length, 12000); i++) {
-        const code = binary.charCodeAt(i);
-        if (code >= 32 && code <= 126) textStream += binary[i];
-        else if (code === 10 || code === 13) textStream += ' ';
-      }
-    } catch (e) {
-      console.warn('Base64 stream decode notice:', e);
-    }
-  }
-
-  const rawFileName = fileData?.fileName || '';
-  const cleanFileName = rawFileName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ').trim();
-  const combinedText = `${cleanFileName} ${textStream}`.toLowerCase();
-  const isHexOrUuid = /^[a-f0-9\s-]{12,}$/i.test(cleanFileName) || /^[a-f0-9]{8}/i.test(cleanFileName) || cleanFileName.length > 25;
-
-  // Special detection for CloudCom Systems Pvt. Ltd. Invoice
-  if (combinedText.includes('cloudcom') || combinedText.includes('ccs-2025') || combinedText.includes('194700') || combinedText.includes('194,700') || combinedText.includes('innovatech') || isHexOrUuid) {
+  if (!isValidGeminiApiKey(activeKey)) {
     return {
-      vendor: 'CloudCom Systems Pvt. Ltd.',
-      vendorAddress: '78 Tech Park Rd, Whitefield, Bengaluru, Karnataka 560066, India',
-      vendorGstin: '29AADFC5678R1Z9',
-      vendorPhone: '+91 80 4567 8900',
-      vendorEmail: 'billing@cloudcomsystems.com',
-      invoiceNumber: 'CCS-2025-2134',
-      date: '20 Nov 2025',
-      dueDate: '05 Dec 2025',
-      poNumber: 'PO-99123',
-      paymentTerms: 'Net 15 Days',
-      billToCustomer: 'Innovatech Solutions Pvt. Ltd.',
-      billToAddress: '34, Church Street, Indiranagar, Bengaluru, Karnataka 560001, India',
-      billToGstin: '29ABCC1234D1ZA',
-      subtotal: 165000,
-      taxGst: 29700,
-      taxLabel: 'IGST (18%)',
-      totalAmount: 194700,
-      calculatedTotal: 194700,
-      amountInWords: 'Indian Rupees One Lakh Ninety Four Thousand Seven Hundred Only',
-      category: 'Software & Cloud Services',
-      issueDescription: null,
-      notes: '1. Please make the payment within the due date.\n2. For any billing queries, contact billing@clodcomsolutions.com.\n3. This is a system generated invoice and does not require a signature.',
-      signatory: 'Rohan Mehta, Authorized Signatory',
-      items: [
-        {
-          description: 'Website Development & Hosting (E-commerce platform build)',
-          hsnSac: '998314',
-          quantity: 1,
-          unitPrice: 95000,
-          amount: 95000,
-        },
-        {
-          description: 'Monthly SEO Campaign (Cross-Platform SEO Monthly)',
-          hsnSac: '998313',
-          quantity: 3,
-          unitPrice: 10000,
-          amount: 30000,
-        },
-        {
-          description: 'Cloud Server Migration (Dedicated Server Configuration)',
-          hsnSac: '998312',
-          quantity: 1,
-          unitPrice: 40000,
-          amount: 40000,
-        },
-      ],
+      success: false,
+      error: 'Invalid or missing GEMINI_API_KEY in server environment. Please configure a valid Google Gemini API Key in .env.local to enable AI invoice extraction.',
+      code: 'GEMINI_API_KEY_INVALID',
     };
   }
 
-  // Special detection for SkyTech Solutions Invoice
-  if (combinedText.includes('skytech') || combinedText.includes('sts-2025') || combinedText.includes('16520') || combinedText.includes('16,520')) {
+  if (!fileData || !fileData.base64) {
     return {
-      vendor: 'SkyTech Solutions Pvt. Ltd.',
-      vendorAddress: '123 Innovation Drive, Koramangala, Bengaluru, Karnataka 560034, India',
-      vendorGstin: '29ABCDE1234F1Z5',
-      vendorPhone: '+91 80 4567 8900',
-      vendorEmail: 'billing@skytechsolutions.com',
-      invoiceNumber: 'STS-2025-1042',
-      date: '15 Oct 2025',
-      dueDate: '30 Oct 2025',
-      poNumber: 'PO-77891',
-      paymentTerms: 'Net 15 Days',
-      billToCustomer: 'Acme Retail Pvt. Ltd.',
-      billToAddress: '45, MG Road, Indiranagar, Bengaluru, Karnataka 560038, India',
-      billToGstin: '29AABCA9876K1Z1',
-      subtotal: 14000,
-      taxGst: 2520,
-      taxLabel: 'IGST (18%)',
-      totalAmount: 16520,
-      calculatedTotal: 16520,
-      amountInWords: 'Indian Rupees Sixteen Thousand Five Hundred Twenty Only',
-      category: 'Software & Cloud Services',
-      issueDescription: null,
-      notes: '1. Please make the payment within the due date.\n2. For any billing queries, contact billing@skytechsolutions.com.',
-      signatory: 'Rohan Mehta, Authorized Signatory',
-      items: [
-        {
-          description: 'Cloud Server Hosting (Virtual Machine Standard Instance)',
-          hsnSac: '998315',
-          quantity: 2,
-          unitPrice: 5000,
-          amount: 10000,
-        },
-        {
-          description: 'Managed Backup Service (Monthly Backup 1 TB)',
-          hsnSac: '998315',
-          quantity: 1,
-          unitPrice: 2500,
-          amount: 2500,
-        },
-        {
-          description: 'Technical Support (24/7 Support Monthly)',
-          hsnSac: '998316',
-          quantity: 1,
-          unitPrice: 1500,
-          amount: 1500,
-        },
-      ],
+      success: false,
+      error: 'No document file payload received. Please select a valid PDF or image invoice file.',
+      code: 'MISSING_FILE_PAYLOAD',
     };
   }
 
-  // Dynamic Extraction from Text Lines
-  const lines = textStream.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
+  try {
+    const prompt = `You are SmartLedger's expert document extraction AI. Analyze the actual text, visual layout, header, line items, and totals in this uploaded invoice or receipt.
+Extract structured accounting data adhering strictly to this JSON schema:
 
-  // Extract Real Vendor Name
-  let vendor = '';
-  for (const line of lines) {
-    if (/invoice|bill|receipt|tax|gstin|date|total|amount|ship|bill to|phone|email/i.test(line)) continue;
-    if (line.length >= 3 && line.length <= 45 && /[a-zA-Z]/.test(line)) {
-      vendor = line;
-      break;
+{
+  "vendorName": "Vendor or Business Name (or null if not found)",
+  "vendorAddress": "Vendor Address (or null if not found)",
+  "vendorGstin": "GSTIN (e.g. 29ABCDE1234F1Z5 or null)",
+  "vendorPhone": "Phone number (or null)",
+  "vendorEmail": "Email address (or null)",
+  "invoiceNumber": "Invoice Number / Bill No (or null if not found)",
+  "invoiceDate": "Document Date (e.g. 20 Nov 2025 or null)",
+  "dueDate": "Payment Due Date (or null)",
+  "poNumber": "PO Number (or null)",
+  "paymentTerms": "Payment Terms (e.g. Net 15 Days or null)",
+  "billToCustomer": "Billed Customer Name (or null)",
+  "billToAddress": "Billed Customer Address (or null)",
+  "billToGstin": "Billed Customer GSTIN (or null)",
+  "shipToCustomer": "Ship To Name (or null)",
+  "shipToAddress": "Ship To Address (or null)",
+  "shipToGstin": "Ship To GSTIN (or null)",
+  "subtotal": 0.00,
+  "taxLabel": "Tax type string e.g. IGST (18%) or null",
+  "taxRate": 18,
+  "taxAmount": 0.00,
+  "totalAmount": 0.00,
+  "amountInWords": "Amount in words (or null)",
+  "currency": "INR",
+  "notes": "Invoice notes/terms (or null)",
+  "signatory": "Authorized Signatory Name (or null)",
+  "items": [
+    {
+      "description": "Item or service description",
+      "hsnSac": "HSN/SAC code (or null)",
+      "quantity": 1,
+      "unitPrice": 0.00,
+      "amount": 0.00
     }
-  }
-
-  if (!vendor && cleanFileName && !isHexOrUuid) {
-    const words = cleanFileName.split(' ').filter((w) => !/^(invoice|bill|receipt|doc|pdf|jpg|png|scan|\d+)$/i.test(w));
-    if (words.length > 0) {
-      vendor = words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-    }
-  }
-
-  if (!vendor) {
-    vendor = 'CloudCom Systems Pvt. Ltd.';
-  }
-
-  // Extract Real Invoice Number
-  let invoiceNumber = '';
-  const invMatch = textStream.match(/(?:Invoice|Inv|Bill|Receipt|Ref|No|#)[\s.:#-]*([A-Za-z0-9/-]{3,25})/i);
-  if (invMatch && invMatch[1]) {
-    invoiceNumber = invMatch[1].toUpperCase();
-  } else {
-    const fileNumMatch = cleanFileName.match(/\d{4,10}/);
-    if (fileNumMatch && fileNumMatch[0]) {
-      invoiceNumber = `INV-${fileNumMatch[0]}`;
-    } else {
-      invoiceNumber = `INV-${Math.floor(10000 + Math.random() * 90000)}`;
-    }
-  }
-
-  // Extract Real Document Date
-  let date = '';
-  const dateMatch = textStream.match(/\b(\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{2,4})\b/i);
-  if (dateMatch && dateMatch[1]) {
-    date = dateMatch[1];
-  } else {
-    date = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-  }
-
-  // Extract Real GSTIN
-  let vendorGstin = '';
-  const gstinMatch = textStream.match(/\b\d{2}[A-Z]{5}\d{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}\b/);
-  if (gstinMatch && gstinMatch[0]) {
-    vendorGstin = gstinMatch[0];
-  }
-
-  // Extract Amounts (Subtotal, GST, Total)
-  const amountRegex = /(?:Total|Grand Total|Amount Payable|Net Amount|Subtotal|GST|Rs|INR|₹|\$)\s*[:=]?\s*([0-9,]+(?:\.[0-9]{2})?)/gi;
-  let matchExec: RegExpExecArray | null;
-  const extractedNumbers: number[] = [];
-
-  while ((matchExec = amountRegex.exec(textStream)) !== null) {
-    if (matchExec[1]) {
-      const num = parseFloat(matchExec[1].replace(/,/g, ''));
-      if (!isNaN(num) && num > 5) {
-        extractedNumbers.push(num);
-      }
-    }
-  }
-
-  let totalAmount = 0;
-  if (extractedNumbers.length > 0) {
-    totalAmount = Math.max(...extractedNumbers);
-  }
-
-  if (totalAmount === 0) {
-    const numbersInText = textStream.match(/\b\d{3,6}(?:\.\d{2})?\b/g) || [];
-    const nums = numbersInText.map((n) => parseFloat(n)).filter((n) => !isNaN(n) && n > 20);
-    if (nums.length > 0) {
-      totalAmount = Math.max(...nums);
-    }
-  }
-
-  if (totalAmount === 0) {
-    totalAmount = 12500;
-  }
-
-  const subtotal = Math.round((totalAmount / 1.18) * 100) / 100;
-  const taxGst = Math.round((totalAmount - subtotal) * 100) / 100;
-  const calculatedTotal = subtotal + taxGst;
-
-  // Real Category Classification Engine
-  let category = 'Office Equipment & Supplies';
-  if (/software|cloud|aws|hosting|server|license|domain|subscription|tech|digital/i.test(combinedText)) {
-    category = 'Software & Cloud Services';
-  } else if (/travel|flight|hotel|cab|uber|hospitality|restaurant|food|dining|cafe/i.test(combinedText)) {
-    category = 'Meals & Hospitality';
-  } else if (/freight|shipping|courier|logistics|post|delivery|transport/i.test(combinedText)) {
-    category = 'Freight & Shipping Services';
-  } else if (/electricity|water|broadband|mobile|telecom|internet|bill/i.test(combinedText)) {
-    category = 'Utilities & Communication';
-  } else if (/audit|legal|consulting|fee|accounting|ca/i.test(combinedText)) {
-    category = 'Professional & Legal Services';
-  }
-
-  // Parse Real Line Items
-  const items: Array<{ description: string; hsnSac?: string; quantity: number; unitPrice: number; amount: number }> = [];
-  for (const line of lines) {
-    if (line.length > 10 && /\d/.test(line) && !/invoice|subtotal|total|gstin|date|page|tax/i.test(line)) {
-      items.push({
-        description: line,
-        quantity: 1,
-        unitPrice: subtotal,
-        amount: subtotal,
-      });
-      if (items.length >= 3) break;
-    }
-  }
-
-  if (items.length === 0) {
-    items.push({
-      description: `${category} - ${fileData?.fileName || 'Uploaded Document'}`,
-      quantity: 1,
-      unitPrice: subtotal,
-      amount: subtotal,
-    });
-  }
-
-  return {
-    vendor,
-    vendorGstin,
-    invoiceNumber,
-    date,
-    subtotal,
-    taxGst,
-    totalAmount,
-    calculatedTotal,
-    category,
-    issueDescription: null,
-    items,
-  };
+  ]
 }
+
+CRITICAL INSTRUCTIONS:
+1. Extract ONLY information that is explicitly visible in the uploaded document.
+2. If a field is not present or cannot be read, set it to null or empty string. NEVER invent or guess data.
+3. Ensure numbers (subtotal, taxAmount, totalAmount, quantity, unitPrice, amount) are parsed as numbers, not strings.
+4. Respond ONLY with valid, raw JSON. Do NOT include markdown code fences or conversational text.`;
+
+    const isBearerToken = activeKey.startsWith('AQ.') || activeKey.startsWith('ya29.');
+    const url = `${GEMINI_API_ENDPOINT}?key=${activeKey}`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              {
+                inline_data: {
+                  mime_type: fileData.mimeType,
+                  data: fileData.base64,
+                },
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.1,
+          response_mime_type: 'application/json',
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      let errorMsg = `Gemini API call failed with HTTP status ${response.status}.`;
+      try {
+        const parsedErr = JSON.parse(errText);
+        if (parsedErr.error?.message) {
+          errorMsg = `Gemini API Error (${response.status}): ${parsedErr.error.message}`;
+        }
+      } catch {}
+
+      if (response.status === 401) {
+        errorMsg += ' Please obtain a free Google AI Studio API key starting with "AIzaSy..." from https://aistudio.google.com/app/apikey and add it to .env.local.';
+      }
+
+      return {
+        success: false,
+        error: errorMsg,
+        code: `GEMINI_HTTP_${response.status}`,
+      };
+    }
+
+    const json = await response.json();
+    const rawText = json.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!rawText) {
+      return {
+        success: false,
+        error: 'Gemini Vision AI completed processing but returned an empty response candidate.',
+        code: 'EMPTY_AI_RESPONSE',
+      };
+    }
+
+    const cleanedText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+    let parsed: any;
+    try {
+      parsed = JSON.parse(cleanedText);
+    } catch (parseErr) {
+      return {
+        success: false,
+        error: 'Failed to parse JSON schema from Gemini AI extraction output.',
+        code: 'EXTRACTION_PARSING_ERROR',
+      };
+    }
+
+    // Dynamic Category Classification Engine based strictly on extracted vendor name & item descriptions
+    const vendorStr = (parsed.vendorName || '').toLowerCase();
+    const itemDescs = (parsed.items || []).map((i: any) => i.description || '').join(' ').toLowerCase();
+    const fullContentText = `${vendorStr} ${itemDescs}`;
+
+    let category = 'Other';
+    if (/software|cloud|aws|hosting|server|license|domain|subscription|seo|tech|digital|platform/i.test(fullContentText)) {
+      category = 'Software & Cloud Services';
+    } else if (/paper|stationery|office|desk|chair|printer|supplies|furniture|toner|cartridge/i.test(fullContentText)) {
+      category = 'Office Equipment & Supplies';
+    } else if (/hotel|restaurant|food|dining|catering|cafe|travel|flight|uber|cab|hospitality/i.test(fullContentText)) {
+      category = 'Meals & Hospitality';
+    } else if (/freight|shipping|courier|logistics|post|delivery|transport|cargo/i.test(fullContentText)) {
+      category = 'Freight & Shipping Services';
+    } else if (/electricity|water|broadband|mobile|telecom|internet|bill|utility/i.test(fullContentText)) {
+      category = 'Utilities & Communication';
+    } else if (/audit|legal|consulting|fee|accounting|ca|advisory|tax|professional/i.test(fullContentText)) {
+      category = 'Professional & Legal Services';
+    }
+
+    const extractionResult: GeminiExtractionResult = {
+      vendorName: parsed.vendorName || null,
+      vendorAddress: parsed.vendorAddress || null,
+      vendorGstin: parsed.vendorGstin || null,
+      vendorPhone: parsed.vendorPhone || null,
+      vendorEmail: parsed.vendorEmail || null,
+      invoiceNumber: parsed.invoiceNumber || null,
+      invoiceDate: parsed.invoiceDate || null,
+      dueDate: parsed.dueDate || null,
+      poNumber: parsed.poNumber || null,
+      paymentTerms: parsed.paymentTerms || null,
+      billToCustomer: parsed.billToCustomer || null,
+      billToAddress: parsed.billToAddress || null,
+      billToGstin: parsed.billToGstin || null,
+      shipToCustomer: parsed.shipToCustomer || null,
+      shipToAddress: parsed.shipToAddress || null,
+      shipToGstin: parsed.shipToGstin || null,
+      subtotal: typeof parsed.subtotal === 'number' ? parsed.subtotal : Number(parsed.subtotal || 0),
+      taxLabel: parsed.taxLabel || null,
+      taxRate: typeof parsed.taxRate === 'number' ? parsed.taxRate : Number(parsed.taxRate || 0),
+      taxAmount: typeof parsed.taxAmount === 'number' ? parsed.taxAmount : Number(parsed.taxAmount || 0),
+      totalAmount: typeof parsed.totalAmount === 'number' ? parsed.totalAmount : Number(parsed.totalAmount || 0),
+      amountInWords: parsed.amountInWords || null,
+      currency: parsed.currency || 'INR',
+      notes: parsed.notes || null,
+      signatory: parsed.signatory || null,
+      category,
+      items: Array.isArray(parsed.items)
+        ? parsed.items.map((item: any) => ({
+            description: item.description || 'Unspecified Item',
+            hsnSac: item.hsnSac || null,
+            quantity: typeof item.quantity === 'number' ? item.quantity : Number(item.quantity || 1),
+            unitPrice: typeof item.unitPrice === 'number' ? item.unitPrice : Number(item.unitPrice || 0),
+            amount: typeof item.amount === 'number' ? item.amount : Number(item.amount || 0),
+          }))
+        : [],
+    };
+
+    return {
+      success: true,
+      data: extractionResult,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: `Invoice extraction error: ${(error as Error).message}`,
+      code: 'EXTRACTION_EXCEPTION',
+    };
+  }
+}
+

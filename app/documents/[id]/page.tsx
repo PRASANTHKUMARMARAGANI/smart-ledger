@@ -246,8 +246,8 @@ export default function DocumentDetailsPage() {
                 <div>
                   <span className="text-xs text-slate-400 font-medium block uppercase tracking-wider">Vendor & Supplier</span>
                   <span className="font-extrabold text-slate-900 text-base">{doc.vendor}</span>
-                  <p className="text-xs text-slate-500 font-mono mt-0.5">GSTIN: {doc.vendorGstin || '29ABCDE1234F1Z5'}</p>
-                  <p className="text-xs text-slate-500">{doc.vendorAddress || '123 Innovation Drive, Koramangala, Bengaluru, Karnataka 560034, India'}</p>
+                  {doc.vendorGstin && <p className="text-xs text-slate-500 font-mono mt-0.5">GSTIN: {doc.vendorGstin}</p>}
+                  {doc.vendorAddress && <p className="text-xs text-slate-500">{doc.vendorAddress}</p>}
                 </div>
 
                 <div className="pt-3 border-t border-slate-100 grid grid-cols-2 gap-4">
@@ -264,29 +264,33 @@ export default function DocumentDetailsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <span className="text-xs text-slate-400 font-medium block uppercase tracking-wider">Due Date</span>
-                    <span className="font-semibold text-slate-800">{doc.dueDate || '30 Oct 2025'}</span>
+                    <span className="font-semibold text-slate-800">{doc.dueDate || 'Not Specified'}</span>
                   </div>
                   <div>
                     <span className="text-xs text-slate-400 font-medium block uppercase tracking-wider">PO Number</span>
-                    <span className="font-semibold text-slate-800 font-mono">{doc.poNumber || 'PO-77891'}</span>
+                    <span className="font-semibold text-slate-800 font-mono">{doc.poNumber || 'Not Specified'}</span>
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-slate-100">
-                  <span className="text-xs text-slate-400 font-medium block uppercase tracking-wider">Billed Customer</span>
-                  <span className="font-bold text-slate-900">{doc.billToCustomer || 'Acme Retail Pvt. Ltd.'}</span>
-                  <p className="text-xs text-slate-500 font-mono">GSTIN: {doc.billToGstin || '29AABCA9876K1Z1'}</p>
-                </div>
+                {doc.billToCustomer && (
+                  <div className="pt-3 border-t border-slate-100">
+                    <span className="text-xs text-slate-400 font-medium block uppercase tracking-wider">Billed Customer</span>
+                    <span className="font-bold text-slate-900">{doc.billToCustomer}</span>
+                    {doc.billToGstin && <p className="text-xs text-slate-500 font-mono">GSTIN: {doc.billToGstin}</p>}
+                  </div>
+                )}
 
                 <div className="pt-3 border-t border-slate-100 space-y-2">
                   <div className="flex justify-between text-xs text-slate-600">
                     <span>Subtotal:</span>
                     <span className="font-mono font-semibold">₹{doc.subtotal.toLocaleString('en-IN')}</span>
                   </div>
-                  <div className="flex justify-between text-xs text-slate-600">
-                    <span>{doc.taxLabel || 'IGST (18%)'}:</span>
-                    <span className="font-mono font-semibold">₹{doc.taxGst.toLocaleString('en-IN')}</span>
-                  </div>
+                  {doc.taxGst > 0 && (
+                    <div className="flex justify-between text-xs text-slate-600">
+                      <span>{doc.taxLabel || 'Tax / GST'}:</span>
+                      <span className="font-mono font-semibold">₹{doc.taxGst.toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-base font-black text-slate-900 pt-1 border-t border-slate-200">
                     <span>Total Amount (INR):</span>
                     <span className="font-mono text-indigo-700">₹{doc.totalAmount.toLocaleString('en-IN')}</span>
@@ -309,11 +313,23 @@ export default function DocumentDetailsPage() {
               </h3>
 
               <div className="space-y-2 text-xs font-medium">
-                <div className="flex items-center gap-2 text-emerald-700">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Required information found</span>
+                {/* 1. Required Info Check */}
+                <div
+                  className={`flex items-center gap-2 ${
+                    doc.checks.requiredInfoFound ? 'text-emerald-700' : 'text-amber-800 font-bold'
+                  }`}
+                >
+                  {doc.checks.requiredInfoFound ? (
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  )}
+                  <span>
+                    {doc.checks.requiredInfoFound ? 'Required information found' : 'Required information incomplete'}
+                  </span>
                 </div>
 
+                {/* 2. Amount Verified Check */}
                 <div
                   className={`flex items-center gap-2 ${
                     doc.checks.amountVerified ? 'text-emerald-700' : 'text-amber-800 font-bold'
@@ -329,9 +345,20 @@ export default function DocumentDetailsPage() {
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2 text-emerald-700">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>No duplicate found</span>
+                {/* 3. Duplicate Check */}
+                <div
+                  className={`flex items-center gap-2 ${
+                    doc.checks.noDuplicateFound ? 'text-emerald-700' : 'text-rose-800 font-bold'
+                  }`}
+                >
+                  {doc.checks.noDuplicateFound ? (
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                  )}
+                  <span>
+                    {doc.checks.noDuplicateFound ? 'No duplicate found' : 'Duplicate invoice detected'}
+                  </span>
                 </div>
               </div>
 
