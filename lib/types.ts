@@ -8,6 +8,7 @@ export interface DocumentCheck {
 
 export interface InvoiceItem {
   description: string;
+  hsnSac?: string;
   quantity: number;
   unitPrice: number;
   amount: number;
@@ -16,17 +17,31 @@ export interface InvoiceItem {
 export interface LedgerDocument {
   id: string;
   vendor: string;
+  vendorAddress?: string;
+  vendorGstin?: string;
+  vendorPhone?: string;
+  vendorEmail?: string;
   invoiceNumber: string;
   date: string;
+  dueDate?: string;
+  poNumber?: string;
+  paymentTerms?: string;
+  billToCustomer?: string;
+  billToAddress?: string;
+  billToGstin?: string;
   subtotal: number;
   taxGst: number;
+  taxLabel?: string;
   totalAmount: number;
   calculatedTotal: number;
+  amountInWords?: string;
   category: string;
   status: DocumentStatus;
   checks: DocumentCheck;
   issueDescription?: string | null;
   items?: InvoiceItem[];
+  notes?: string;
+  signatory?: string;
   uploadedAt: string;
   fileType?: string;
   fileName?: string;

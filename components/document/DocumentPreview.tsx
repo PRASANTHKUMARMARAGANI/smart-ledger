@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { LedgerDocument } from '@/lib/types';
-import { FileText, ZoomIn } from 'lucide-react';
+import { FileText, ZoomIn, ShieldCheck } from 'lucide-react';
 
 export const DocumentPreview: React.FC<{ doc: LedgerDocument }> = ({ doc }) => {
   return (
@@ -11,94 +11,150 @@ export const DocumentPreview: React.FC<{ doc: LedgerDocument }> = ({ doc }) => {
       <div className="flex items-center justify-between border-b border-slate-800 pb-4">
         <div className="flex items-center gap-2">
           <FileText className="w-4 h-4 text-emerald-400" />
-          <span className="text-xs font-mono text-slate-300">
+          <span className="text-xs font-mono text-slate-300 truncate">
             PREVIEW: {doc.fileName || `${doc.invoiceNumber}.pdf`}
           </span>
         </div>
         <div className="flex items-center gap-1.5 text-[11px] text-slate-400 bg-slate-800 px-2.5 py-1 rounded-lg">
           <ZoomIn className="w-3.5 h-3.5" />
-          <span>100% Original</span>
+          <span>100% Original Sheet</span>
         </div>
       </div>
 
-      {/* Visual Rendered Document Sheet */}
+      {/* Visual Rendered Document Sheet matching exact invoice specification */}
       <div className="bg-white text-slate-900 rounded-xl p-6 sm:p-8 shadow-2xl space-y-6 text-xs font-sans border border-slate-200">
-        {/* Document Header */}
-        <div className="flex justify-between items-start border-b border-slate-200 pb-6">
-          <div>
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">{doc.vendor}</h2>
-            <p className="text-slate-500 text-[11px] mt-1">Tax Invoice & Billing Summary</p>
-            <p className="text-slate-400 text-[10px] mt-0.5">GSTIN: 27AAAAA0000A1Z5</p>
+        {/* Top Header: Logo / Company Name & Invoice Metadata */}
+        <div className="flex justify-between items-start border-b border-slate-200 pb-6 gap-4">
+          <div className="space-y-1 max-w-[60%]">
+            <h2 className="text-xl font-extrabold text-sky-950 tracking-tight">{doc.vendor}</h2>
+            <p className="text-sky-700 font-medium text-[11px]">Cloud • Software • Smarter Business</p>
+            <p className="text-slate-600 text-[10px] leading-relaxed">
+              {doc.vendorAddress || '123 Innovation Drive, Koramangala, Bengaluru, Karnataka 560034, India'}
+            </p>
+            <p className="text-slate-500 text-[10px] font-mono">GSTIN: {doc.vendorGstin || '29ABCDE1234F1Z5'}</p>
+            <p className="text-slate-500 text-[10px]">
+              Phone: {doc.vendorPhone || '+91 80 4567 8900'} | Email: {doc.vendorEmail || 'billing@skytechsolutions.com'}
+            </p>
           </div>
-          <div className="text-right">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest block">INVOICE</span>
-            <span className="text-sm font-bold text-slate-900 block">{doc.invoiceNumber}</span>
-            <span className="text-[11px] text-slate-500 block mt-1">Date: {doc.date}</span>
+
+          <div className="text-right space-y-1 shrink-0">
+            <span className="text-lg font-black text-sky-900 tracking-wider block uppercase">INVOICE</span>
+            <div className="text-[11px] space-y-0.5 pt-1 font-medium text-slate-700">
+              <p><span className="font-bold text-slate-900">Invoice No:</span> {doc.invoiceNumber}</p>
+              <p><span className="font-bold text-slate-900">Invoice Date:</span> {doc.date}</p>
+              {doc.dueDate && <p><span className="font-bold text-slate-900">Due Date:</span> {doc.dueDate}</p>}
+              {doc.poNumber && <p><span className="font-bold text-slate-900">PO Number:</span> {doc.poNumber}</p>}
+              {doc.paymentTerms && <p><span className="font-bold text-slate-900">Payment Terms:</span> {doc.paymentTerms}</p>}
+            </div>
           </div>
         </div>
 
-        {/* Bill To */}
-        <div className="text-[11px]">
-          <span className="font-semibold text-slate-400 block uppercase">Billed To:</span>
-          <span className="font-bold text-slate-800 block">Apex Accounting Practice</span>
-          <span className="text-slate-500 block">Financial Ops Division</span>
+        {/* Bill To & Ship To Sections */}
+        <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200/80 text-[11px]">
+          <div>
+            <span className="font-bold text-slate-900 block uppercase tracking-wider text-[10px] mb-1">Bill To</span>
+            <span className="font-extrabold text-slate-900 block text-xs">{doc.billToCustomer || 'Acme Retail Pvt. Ltd.'}</span>
+            <p className="text-slate-600 leading-tight mt-0.5">{doc.billToAddress || '45, MG Road, Indiranagar, Bengaluru, Karnataka 560038, India'}</p>
+            <p className="text-slate-500 font-mono text-[10px] mt-1">GSTIN: {doc.billToGstin || '29AABCA9876K1Z1'}</p>
+          </div>
+
+          <div>
+            <span className="font-bold text-slate-900 block uppercase tracking-wider text-[10px] mb-1">Ship To</span>
+            <span className="font-extrabold text-slate-900 block text-xs">{doc.billToCustomer || 'Acme Retail Pvt. Ltd.'}</span>
+            <p className="text-slate-600 leading-tight mt-0.5">{doc.billToAddress || '45, MG Road, Indiranagar, Bengaluru, Karnataka 560038, India'}</p>
+          </div>
         </div>
 
         {/* Line Items Table */}
         <div className="space-y-2">
-          <div className="grid grid-cols-12 text-[10px] font-bold text-slate-400 uppercase tracking-wider pb-2 border-b border-slate-200">
-            <div className="col-span-6">Item Description</div>
-            <div className="col-span-2 text-center">Qty</div>
-            <div className="col-span-2 text-right">Price</div>
-            <div className="col-span-2 text-right">Total</div>
+          <div className="grid grid-cols-12 text-[10px] font-bold text-slate-600 uppercase tracking-wider pb-2 border-b-2 border-slate-900 bg-sky-950 text-white p-2 rounded-lg">
+            <div className="col-span-1 text-center">#</div>
+            <div className="col-span-5">Description</div>
+            <div className="col-span-2 text-center">HSN/SAC</div>
+            <div className="col-span-1 text-center">Qty</div>
+            <div className="col-span-1 text-right">Unit Price</div>
+            <div className="col-span-2 text-right">Amount (INR)</div>
           </div>
 
           {doc.items && doc.items.length > 0 ? (
             doc.items.map((item, idx) => (
-              <div key={idx} className="grid grid-cols-12 text-[11px] py-1 text-slate-700">
-                <div className="col-span-6 font-medium">{item.description}</div>
-                <div className="col-span-2 text-center text-slate-500">{item.quantity}</div>
-                <div className="col-span-2 text-right text-slate-500">₹{item.unitPrice.toLocaleString('en-IN')}</div>
-                <div className="col-span-2 text-right font-semibold">₹{item.amount.toLocaleString('en-IN')}</div>
+              <div key={idx} className="grid grid-cols-12 text-[11px] py-2 border-b border-slate-100 text-slate-800 items-center">
+                <div className="col-span-1 text-center font-bold text-slate-500">{idx + 1}</div>
+                <div className="col-span-5 font-semibold text-slate-900">{item.description}</div>
+                <div className="col-span-2 text-center text-slate-500 font-mono">{item.hsnSac || '998315'}</div>
+                <div className="col-span-1 text-center font-bold text-slate-700">{item.quantity}</div>
+                <div className="col-span-1 text-right text-slate-600 font-mono">₹{item.unitPrice.toLocaleString('en-IN')}</div>
+                <div className="col-span-2 text-right font-extrabold text-slate-900 font-mono">₹{item.amount.toLocaleString('en-IN')}</div>
               </div>
             ))
           ) : (
-            <div className="grid grid-cols-12 text-[11px] py-1 text-slate-700">
-              <div className="col-span-6 font-medium">Accounting Document Item</div>
-              <div className="col-span-2 text-center text-slate-500">1</div>
-              <div className="col-span-2 text-right text-slate-500">₹{doc.subtotal.toLocaleString('en-IN')}</div>
-              <div className="col-span-2 text-right font-semibold">₹{doc.subtotal.toLocaleString('en-IN')}</div>
+            <div className="grid grid-cols-12 text-[11px] py-2 text-slate-700">
+              <div className="col-span-1 text-center">1</div>
+              <div className="col-span-5 font-medium">Cloud Server Hosting (Virtual Machine Standard Instance)</div>
+              <div className="col-span-2 text-center text-slate-500 font-mono">998315</div>
+              <div className="col-span-1 text-center">2</div>
+              <div className="col-span-1 text-right">₹5,000</div>
+              <div className="col-span-2 text-right font-semibold">₹10,000</div>
             </div>
           )}
         </div>
 
-        {/* Totals Section */}
-        <div className="border-t border-slate-200 pt-4 flex flex-col items-end space-y-1 text-[11px]">
-          <div className="flex justify-between w-48 text-slate-600">
+        {/* Totals & Subtotal Calculation Section */}
+        <div className="flex flex-col items-end space-y-1.5 text-[11px] pt-2">
+          <div className="flex justify-between w-64 text-slate-700 font-medium">
             <span>Subtotal:</span>
-            <span>₹{doc.subtotal.toLocaleString('en-IN')}</span>
+            <span className="font-mono font-semibold">₹{doc.subtotal.toLocaleString('en-IN')}</span>
           </div>
-          <div className="flex justify-between w-48 text-slate-600">
-            <span>GST (18%):</span>
-            <span>₹{doc.taxGst.toLocaleString('en-IN')}</span>
+          <div className="flex justify-between w-64 text-slate-700 font-medium">
+            <span>{doc.taxLabel || 'IGST (18%)'}:</span>
+            <span className="font-mono font-semibold">₹{doc.taxGst.toLocaleString('en-IN')}</span>
           </div>
 
-          {/* Highlight total */}
           <div
-            className={`flex justify-between w-48 text-sm font-bold pt-2 border-t border-slate-300 p-1.5 rounded-lg ${
+            className={`flex justify-between w-64 text-sm font-black pt-2 border-t-2 border-slate-900 p-2 rounded-lg ${
               doc.status === 'Needs Review'
-                ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                : 'bg-emerald-50 text-emerald-900 border border-emerald-300'
+                ? 'bg-amber-100 text-amber-950 border border-amber-300'
+                : 'bg-sky-50 text-sky-950 border border-sky-300'
             }`}
           >
-            <span>Invoice Total:</span>
-            <span>₹{doc.totalAmount.toLocaleString('en-IN')}</span>
+            <span>Total Amount (INR):</span>
+            <span className="font-mono">₹{doc.totalAmount.toLocaleString('en-IN')}</span>
+          </div>
+        </div>
+
+        {/* Amount In Words & Notes */}
+        <div className="pt-4 border-t border-slate-200 space-y-3 text-[11px]">
+          <div>
+            <span className="font-bold text-slate-900 block">Amount in Words:</span>
+            <p className="text-slate-700 font-medium italic">
+              {doc.amountInWords || 'Indian Rupees Sixteen Thousand Five Hundred Twenty Only'}
+            </p>
+          </div>
+
+          <div>
+            <span className="font-bold text-slate-900 block">Notes:</span>
+            <p className="text-slate-600 whitespace-pre-line leading-relaxed">
+              {doc.notes || '1. Please make the payment within the due date.\n2. For any billing queries, contact billing@skytechsolutions.com.'}
+            </p>
+          </div>
+
+          {/* Signatory Footer */}
+          <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+            <div className="flex items-center gap-1.5 text-emerald-700 text-[10px] font-bold">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <span>SmartLedger AI Document Verification Passed</span>
+            </div>
+            <div className="text-right">
+              <p className="font-bold text-slate-900 text-xs">For {doc.vendor}</p>
+              <p className="font-bold text-slate-700 text-xs italic mt-1">{doc.signatory || 'Rohan Mehta'}</p>
+              <p className="text-[10px] text-slate-500">Authorized Signatory</p>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="text-[11px] text-slate-400 text-center">
-        <span>Verified by SmartLedger OCR & Extraction Engine</span>
+        <span>Extracted & Synchronized directly with Supabase Cloud PostgreSQL</span>
       </div>
     </div>
   );

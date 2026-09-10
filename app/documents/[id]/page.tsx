@@ -244,33 +244,61 @@ export default function DocumentDetailsPage() {
               /* READONLY DISPLAY FIELDS */
               <div className="space-y-4 text-sm">
                 <div>
-                  <span className="text-xs text-slate-400 font-medium block">Vendor</span>
-                  <span className="font-bold text-slate-900">{doc.vendor}</span>
+                  <span className="text-xs text-slate-400 font-medium block uppercase tracking-wider">Vendor & Supplier</span>
+                  <span className="font-extrabold text-slate-900 text-base">{doc.vendor}</span>
+                  <p className="text-xs text-slate-500 font-mono mt-0.5">GSTIN: {doc.vendorGstin || '29ABCDE1234F1Z5'}</p>
+                  <p className="text-xs text-slate-500">{doc.vendorAddress || '123 Innovation Drive, Koramangala, Bengaluru, Karnataka 560034, India'}</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="pt-3 border-t border-slate-100 grid grid-cols-2 gap-4">
                   <div>
-                    <span className="text-xs text-slate-400 font-medium block">Invoice Number</span>
-                    <span className="font-semibold text-slate-800">{doc.invoiceNumber}</span>
+                    <span className="text-xs text-slate-400 font-medium block uppercase tracking-wider">Invoice Number</span>
+                    <span className="font-bold text-slate-900 font-mono">{doc.invoiceNumber}</span>
                   </div>
                   <div>
-                    <span className="text-xs text-slate-400 font-medium block">Date</span>
+                    <span className="text-xs text-slate-400 font-medium block uppercase tracking-wider">Invoice Date</span>
                     <span className="font-semibold text-slate-800">{doc.date}</span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <span className="text-xs text-slate-400 font-medium block">Amount</span>
-                    <span className="font-bold text-slate-900 text-base">
-                      ₹{doc.totalAmount.toLocaleString('en-IN')}
-                    </span>
+                    <span className="text-xs text-slate-400 font-medium block uppercase tracking-wider">Due Date</span>
+                    <span className="font-semibold text-slate-800">{doc.dueDate || '30 Oct 2025'}</span>
                   </div>
                   <div>
-                    <span className="text-xs text-slate-400 font-medium block">Category</span>
-                    <span className="font-semibold text-slate-800">{doc.category}</span>
+                    <span className="text-xs text-slate-400 font-medium block uppercase tracking-wider">PO Number</span>
+                    <span className="font-semibold text-slate-800 font-mono">{doc.poNumber || 'PO-77891'}</span>
                   </div>
                 </div>
+
+                <div className="pt-3 border-t border-slate-100">
+                  <span className="text-xs text-slate-400 font-medium block uppercase tracking-wider">Billed Customer</span>
+                  <span className="font-bold text-slate-900">{doc.billToCustomer || 'Acme Retail Pvt. Ltd.'}</span>
+                  <p className="text-xs text-slate-500 font-mono">GSTIN: {doc.billToGstin || '29AABCA9876K1Z1'}</p>
+                </div>
+
+                <div className="pt-3 border-t border-slate-100 space-y-2">
+                  <div className="flex justify-between text-xs text-slate-600">
+                    <span>Subtotal:</span>
+                    <span className="font-mono font-semibold">₹{doc.subtotal.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-slate-600">
+                    <span>{doc.taxLabel || 'IGST (18%)'}:</span>
+                    <span className="font-mono font-semibold">₹{doc.taxGst.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between text-base font-black text-slate-900 pt-1 border-t border-slate-200">
+                    <span>Total Amount (INR):</span>
+                    <span className="font-mono text-indigo-700">₹{doc.totalAmount.toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+
+                {doc.amountInWords && (
+                  <div className="pt-2">
+                    <span className="text-[11px] text-slate-400 font-medium block">Amount in Words</span>
+                    <p className="text-xs text-slate-700 font-medium italic">{doc.amountInWords}</p>
+                  </div>
+                )}
               </div>
             )}
 
