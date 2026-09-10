@@ -30,22 +30,7 @@ export async function POST(req: NextRequest) {
 
     let delivered = false;
 
-    // 1. Try Supabase Auth OTP if configured
-    if (isSupabaseConfigured()) {
-      try {
-        const { error: supaErr } = await supabase.auth.signInWithOtp({ email });
-        if (!supaErr) {
-          console.log(`[SUPABASE AUTH] Triggered OTP verification email via Supabase for ${email}`);
-          delivered = true;
-        } else {
-          console.warn('[SUPABASE AUTH OTP NOTICE]', supaErr.message);
-        }
-      } catch (e) {
-        console.warn('[SUPABASE AUTH OTP EXCEPTION]', e);
-      }
-    }
-
-    // 2. Try Resend API if configured
+    // 1. Try Resend API if configured
     if (process.env.RESEND_API_KEY) {
       try {
         const resendRes = await fetch('https://api.resend.com/emails', {
