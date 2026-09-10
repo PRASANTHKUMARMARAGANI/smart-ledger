@@ -197,17 +197,10 @@ export async function authenticateUser(email: string, password: string): Promise
 
   const user = users.find((u) => u.email.toLowerCase() === normalizedEmail);
 
-  if (!user) {
+  if (!user || (user.password && user.password !== password)) {
     return {
       success: false,
-      error: 'No account found with this email address. Please click "Create Account" below to register.',
-    };
-  }
-
-  if (user.password && user.password !== password) {
-    return {
-      success: false,
-      error: 'Incorrect password entered. Please check your credentials and try again.',
+      error: 'Invalid email or password. Please check your credentials and try again.',
     };
   }
 
@@ -242,4 +235,64 @@ export function getCurrentUserSession(): { email: string; fullName: string; role
     }
   }
   return null;
+}
+
+/**
+ * Updates the logged-in user profile details (fullName, role, password) in localStorage & Supabase
+ */
+export async function updateUserProfile(
+  email: string,
+  updates: { fullName?: string; role?: UserRole; password?: string }
+): Promise<{ success: boolean; error?: string }> {
+  const normalizedEmail = email.toLowerCase().trim();
+
+  // 1. Update in local users array
+  if (typeof window !== 'undefined') {
+    const savedUsers = localStorage.getItem(STORAGE_USERS_KEY);
+    if (savedUsers) {
+      try {
+        const users: UserAccount[] = JSON.parse(savedUsers);
+        const userIdx = users.findIndex((u) => u.email.toLowerCase() === normalizedEmail);
+        if (userIdx !== -1) {
+          if (updates.fullName) users[userIdx].fullName = updates.fullName;
+          if (updates.role) users[userIdx].role = updates.role;
+          if (updates.password) users[userIdx].password = updates.password;
+          localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(users));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // 2. Update active session object
+    const savedSession = localStorage.getItem(STORAGE_CURRENT_USER);
+    if (savedSession) {
+      try {
+        const session = JSON.parse(savedSession);
+        if (session.email && session.email.toLowerCase() === normalizedEmail) {
+          if (updates.fullName) session.fullName = updates.fullName;
+          if (updates.role) session.role = updates.role;
+          localStorage.setItem(STORAGE_CURRENT_USER, JSON.stringify(session));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }
+
+  // 3. Update in Supabase cloud PostgreSQL table
+  if (isSupabaseConfigured()) {
+    try {
+      const dbUpdates: Record<string, string> = {};
+      if (updates.fullName) dbUpdates.full_name = updates.fullName;
+      if (updates.role) dbUpdates.role = updates.role;
+      if (updates.password) dbUpdates.password = updates.password;
+
+      await supabase.from('users').update(dbUpdates).eq('email', normalizedEmail);
+    } catch (e) {
+      console.warn('Supabase profile update notice:', e);
+    }
+  }
+
+  return { success: true };
 }

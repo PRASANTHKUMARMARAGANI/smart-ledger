@@ -160,7 +160,7 @@ export default function LoginPage() {
               {mode === 'SIGN_IN'
                 ? 'Sign in to access your accounting ledger'
                 : mode === 'SIGN_UP_EMAIL'
-                ? 'Real-Time Email OTP Verification'
+                ? 'Create Account'
                 : 'Set Password & Complete Profile'}
             </p>
           </div>
@@ -241,7 +241,7 @@ export default function LoginPage() {
                   }}
                   className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline underline-offset-4"
                 >
-                  Need an account? Create account with Real Email OTP
+                  Need an account? Create Account
                 </button>
               </div>
             </form>
@@ -299,7 +299,7 @@ export default function LoginPage() {
                   </>
                 ) : (
                   <>
-                    <span>Send Real-Time Email OTP</span>
+                    <span>Send Verification Code</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
