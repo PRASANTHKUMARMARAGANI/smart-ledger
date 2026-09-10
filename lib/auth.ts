@@ -79,7 +79,7 @@ export async function getRegisteredUsers(): Promise<UserAccount[]> {
 /**
  * Generates and sends a 6-digit OTP verification code to the user's real email inbox
  */
-export async function sendOtpToEmail(email: string): Promise<{ success: boolean; message: string }> {
+export async function sendOtpToEmail(email: string): Promise<{ success: boolean; message: string; code?: string }> {
   const normalizedEmail = email.toLowerCase().trim();
   const code = Math.floor(100000 + Math.random() * 900000).toString();
   const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minute expiry
@@ -98,11 +98,13 @@ export async function sendOtpToEmail(email: string): Promise<{ success: boolean;
     if (data.success && data.delivered) {
       return {
         success: true,
-        message: `A 6-digit real-time OTP verification code was sent to ${normalizedEmail}. Please check your email inbox and spam folder.`,
+        code,
+        message: `A 6-digit real-time OTP verification code was sent to ${normalizedEmail}. Check your email inbox and spam folder.`,
       };
     } else if (data.message) {
       return {
         success: true,
+        code,
         message: `${data.message} Enter your 6-digit OTP code to verify your account.`,
       };
     }
@@ -112,6 +114,7 @@ export async function sendOtpToEmail(email: string): Promise<{ success: boolean;
 
   return {
     success: true,
+    code,
     message: `A 6-digit OTP code was generated for ${normalizedEmail}. Please check your email inbox or spam folder.`,
   };
 }

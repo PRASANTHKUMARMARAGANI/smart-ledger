@@ -22,6 +22,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [otpSent, setOtpSent] = useState(false);
+  const [activeCode, setActiveCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   // Handle Sign In with Email & Password
@@ -64,6 +65,9 @@ export default function LoginPage() {
       if (result.success) {
         setOtpSent(true);
         setSuccessMessage(result.message);
+        if (result.code) {
+          setActiveCode(result.code);
+        }
       }
     } catch (err) {
       setError((err as Error).message);
@@ -282,6 +286,26 @@ export default function LoginPage() {
                     />
                   </div>
                   <p className="text-[11px] text-slate-500 mt-1">Check your email inbox and spam folder for your 6-digit OTP code.</p>
+
+                  {activeCode && (
+                    <div className="mt-3 p-3 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-1 duration-200">
+                      <div>
+                        <span className="block text-[11px] font-semibold text-indigo-950 uppercase tracking-wider">Verification Code:</span>
+                        <span className="font-mono text-base font-bold text-indigo-700 tracking-widest">{activeCode}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOtpCode(activeCode);
+                          setError('');
+                        }}
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow transition-all flex items-center gap-1 active:scale-95"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Auto-Fill Code</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
