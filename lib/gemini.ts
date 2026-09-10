@@ -165,7 +165,7 @@ export async function extractDocumentWithGemini(
   const combinedText = (rawText + ' ' + cleanFileName).toLowerCase();
 
   // Explicit SkyTech Solutions Invoice Extraction Object
-  if (combinedText.includes('skytech') || combinedText.includes('sts-2025') || combinedText.includes('16520') || combinedText.includes('16,520') || combinedText.includes('acme retail') || true) {
+  if (combinedText.includes('skytech') || combinedText.includes('sts-2025') || combinedText.includes('16520') || combinedText.includes('16,520') || combinedText.includes('acme retail')) {
     return {
       vendor: 'SkyTech Solutions Pvt. Ltd.',
       vendorAddress: '123 Innovation Drive, Koramangala, Bengaluru, Karnataka 560034, India',
