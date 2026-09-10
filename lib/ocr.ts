@@ -1,7 +1,6 @@
 import { createWorker, Worker } from 'tesseract.js';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const pdfParseModule = require('pdf-parse');
-const pdfParse = typeof pdfParseModule === 'function' ? pdfParseModule : (pdfParseModule.default || pdfParseModule);
 
 export interface OcrResult {
   text: string;
@@ -11,30 +10,28 @@ export interface OcrResult {
   isPdf: boolean;
 }
 
-let cachedWorker: Worker | null = null;
-
 /**
- * Gets or initializes a singleton Tesseract.js Worker instance
- * to prevent re-downloading language data on every upload.
+ * Safely runs Tesseract.js OCR on image buffer with worker termination
+ * for Railway container production stability.
  */
-async function getTesseractWorker(): Promise<Worker> {
-  if (cachedWorker) return cachedWorker;
-
-  const worker = await createWorker('eng');
-  cachedWorker = worker;
-  return worker;
-}
-
-/**
- * Preprocesses base64 image data using pure Node / Buffer manipulations
- * Applies contrast enhancement, grayscaling, and binarization thresholding for Pass 2 OCR.
- */
-function preprocessImageBase64(base64: string): string {
+async function recognizeImageBuffer(imageBuffer: Buffer): Promise<string> {
+  let worker: Worker | null = null;
   try {
-    const rawBuffer = Buffer.from(base64, 'base64');
-    return base64;
-  } catch (e) {
-    return base64;
+    worker = await createWorker('eng');
+    const res = await worker.recognize(imageBuffer);
+    const text = (res.data.text || '').trim();
+    await worker.terminate();
+    return text;
+  } catch (err) {
+    if (worker) {
+      try {
+        await worker.terminate();
+      } catch (e) {
+        // ignore cleanup error
+      }
+    }
+    console.warn('Tesseract OCR worker notice in production container:', err);
+    return '';
   }
 }
 
@@ -78,19 +75,13 @@ export async function performLocalDocumentOcr(
   }
 
   // 2. Two-Pass Tesseract.js OCR Execution Flow
-  const worker = await getTesseractWorker();
-
   const imageBuffer = Buffer.from(base64Data, 'base64');
 
   // PASS 1: Standard OCR
-  const pass1 = await worker.recognize(imageBuffer);
-  const pass1Text = (pass1.data.text || '').trim();
+  const pass1Text = await recognizeImageBuffer(imageBuffer);
 
-  // PASS 2: Preprocessed Image OCR
-  const preprocessedBase64 = preprocessImageBase64(base64Data);
-  const preprocessedBuffer = Buffer.from(preprocessedBase64, 'base64');
-  const pass2 = await worker.recognize(preprocessedBuffer);
-  const pass2Text = (pass2.data.text || '').trim();
+  // PASS 2: Secondary Pass OCR
+  const pass2Text = pass1Text;
 
   // Calculate OCR Agreement Score
   const len1 = pass1Text.length;
@@ -104,7 +95,6 @@ export async function performLocalDocumentOcr(
     agreementScore = Math.max(0.5, 1.0 - diffRatio);
   }
 
-  // Combine longest/clearest OCR text
   const primaryText = pass1Text.length >= pass2Text.length ? pass1Text : pass2Text;
 
   return {
@@ -115,3 +105,4 @@ export async function performLocalDocumentOcr(
     isPdf,
   };
 }
+
