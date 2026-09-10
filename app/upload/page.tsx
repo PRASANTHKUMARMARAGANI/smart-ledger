@@ -32,7 +32,7 @@ function UploadContent() {
       const base64Content = resultStr.includes(',') ? resultStr.split(',')[1] : resultStr;
 
       try {
-        setCurrentStep('Analyzing visual text & layout via Gemini Vision AI...');
+        setCurrentStep('Analyzing visual text & layout via Local Tesseract OCR & PDF Parser...');
 
         const response = await fetch('/api/extract', {
           method: 'POST',
@@ -51,7 +51,7 @@ function UploadContent() {
 
         if (!response.ok || !resData.success || !resData.data) {
           setIsProcessing(false);
-          setErrorMsg(resData.error || 'Invoice extraction failed. Please verify the document clarity and AI configuration.');
+          setErrorMsg(resData.error || 'Invoice extraction failed. Please verify document clarity.');
           return;
         }
 
@@ -65,7 +65,7 @@ function UploadContent() {
         router.push(`/documents/${extractedDoc.id}`);
       } catch (err) {
         setIsProcessing(false);
-        setErrorMsg((err as Error).message || 'Extraction failed. Unable to connect to backend AI pipeline.');
+        setErrorMsg((err as Error).message || 'Extraction failed. Unable to connect to backend processing pipeline.');
       }
     };
 
@@ -119,7 +119,7 @@ function UploadContent() {
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Upload your document</h1>
             <p className="text-xs text-slate-500 mt-1">
-              Upload a real invoice or receipt to automatically extract accounting data via Gemini AI Vision.
+              Upload a real invoice or receipt to automatically extract accounting data via Local OCR & PDF Engine.
             </p>
           </div>
 
@@ -176,7 +176,7 @@ function UploadContent() {
           </div>
 
           <p className="text-[11px] text-slate-400 pt-2">
-            Please wait while Gemini Vision AI extracts text, line items, and accounting metadata.
+            Please wait while local Tesseract OCR & PDF engine extracts text, line items, and accounting metadata.
           </p>
         </div>
       )}

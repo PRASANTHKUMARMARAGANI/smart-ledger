@@ -49,14 +49,41 @@ export async function runMultiAgentPipeline(
 
   const ocrRes = await performLocalDocumentOcr(fileData.base64, fileData.mimeType, fileData.fileName);
 
+  let fields: ExtractedFields;
+
   if (!ocrRes.text || ocrRes.text.length < 5) {
     agentLogs[0].status = 'FLAGGED';
-    agentLogs[0].details = 'Unable to read this document. OCR text stream returned empty output.';
-    throw new Error('Unable to read this document. Please ensure a clear image or PDF is uploaded.');
+    agentLogs[0].details = 'Document OCR text stream was empty or unreadable. Routing to Needs Review queue.';
+    fields = {
+      vendorName: null,
+      vendorAddress: null,
+      vendorGstin: null,
+      vendorPhone: null,
+      vendorEmail: null,
+      invoiceNumber: null,
+      invoiceDate: null,
+      dueDate: null,
+      poNumber: null,
+      paymentTerms: null,
+      billToCustomer: null,
+      billToAddress: null,
+      billToGstin: null,
+      shipToCustomer: null,
+      shipToAddress: null,
+      shipToGstin: null,
+      subtotal: 0,
+      taxLabel: null,
+      taxAmount: 0,
+      totalAmount: 0,
+      amountInWords: null,
+      currency: 'INR',
+      signatory: null,
+      notes: null,
+      items: [],
+    };
+  } else {
+    fields = extractFieldsFromText(ocrRes.text);
   }
-
-  // Extract structured fields from raw OCR text
-  const fields = extractFieldsFromText(ocrRes.text);
 
   // SERVER-SIDE DETAILED EXTRACTION LOGGING (PART 2 REQUIREMENT)
   console.log('\n====================================================');
