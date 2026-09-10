@@ -100,6 +100,11 @@ export async function sendOtpToEmail(email: string): Promise<{ success: boolean;
         success: true,
         message: `A 6-digit real-time OTP verification code was sent to ${normalizedEmail}. Please check your email inbox and spam folder.`,
       };
+    } else if (data.error) {
+      return {
+        success: false,
+        message: data.error,
+      };
     } else if (data.message) {
       return {
         success: true,

@@ -135,12 +135,20 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    console.warn(`[SMTP NOTICE] Email dispatch attempted for ${email}. Check server credentials if not delivered.`);
-    return NextResponse.json({
-      success: true,
-      delivered: false,
-      message: `A 6-digit real-time OTP verification code has been generated for ${email}.`,
-    });
+    const missingVarsNotice = !smtpUser || !smtpPass
+      ? 'SMTP credentials (SMTP_USER & SMTP_PASS) are missing in Railway Variables.'
+      : 'Email delivery attempt failed. Check SMTP credentials or try Resend API key.';
+
+    console.error(`[RAILWAY EMAIL DISPATCH ERROR] ${missingVarsNotice} Target: ${email}`);
+
+    return NextResponse.json(
+      {
+        success: false,
+        delivered: false,
+        error: `Email not delivered: ${missingVarsNotice} Please add SMTP_USER & SMTP_PASS (or RESEND_API_KEY) in Railway Project Settings → Variables.`,
+      },
+      { status: 400 }
+    );
   } catch (error) {
     console.error('Failed to process OTP email request:', error);
     return NextResponse.json(
