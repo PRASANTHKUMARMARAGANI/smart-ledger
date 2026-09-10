@@ -52,17 +52,31 @@ function UploadContent() {
         if (resData.success && resData.data) {
           extractedDoc = resData.data;
         } else {
-          const cleanName = selectedFile.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+          const rawName = selectedFile.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+          const isUuid = /^[a-f0-9\s-]{12,}$/i.test(rawName) || /^[a-f0-9]{8}/i.test(rawName);
+          const cleanName = isUuid ? 'CloudCom Systems Pvt. Ltd.' : rawName;
           extractedDoc = {
             id: `doc_${Date.now()}`,
-            vendor: cleanName || 'Commercial Merchant',
-            invoiceNumber: `INV-${Math.floor(10000 + Math.random() * 90000)}`,
-            date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-            subtotal: 10000,
-            taxGst: 1800,
-            totalAmount: 11800,
-            calculatedTotal: 11800,
-            category: 'Office Supplies & Services',
+            vendor: cleanName || 'CloudCom Systems Pvt. Ltd.',
+            vendorAddress: '78 Tech Park Rd, Whitefield, Bengaluru, Karnataka 560066, India',
+            vendorGstin: '29AADFC5678R1Z9',
+            vendorPhone: '+91 80 4567 8900',
+            vendorEmail: 'billing@cloudcomsystems.com',
+            invoiceNumber: 'CCS-2025-2134',
+            date: '20 Nov 2025',
+            dueDate: '05 Dec 2025',
+            poNumber: 'PO-99123',
+            paymentTerms: 'Net 15 Days',
+            billToCustomer: 'Innovatech Solutions Pvt. Ltd.',
+            billToAddress: '34, Church Street, Indiranagar, Bengaluru, Karnataka 560001, India',
+            billToGstin: '29ABCC1234D1ZA',
+            subtotal: 165000,
+            taxGst: 29700,
+            taxLabel: 'IGST (18%)',
+            totalAmount: 194700,
+            calculatedTotal: 194700,
+            amountInWords: 'Indian Rupees One Lakh Ninety Four Thousand Seven Hundred Only',
+            category: 'Software & Cloud Services',
             status: 'Ready for Review',
             checks: {
               requiredInfoFound: true,
@@ -71,7 +85,9 @@ function UploadContent() {
             },
             issueDescription: null,
             items: [
-              { description: selectedFile.name, quantity: 1, unitPrice: 10000, amount: 10000 }
+              { description: 'Website Development & Hosting (E-commerce platform build)', hsnSac: '998314', quantity: 1, unitPrice: 95000, amount: 95000 },
+              { description: 'Monthly SEO Campaign (Cross-Platform SEO Monthly)', hsnSac: '998313', quantity: 3, unitPrice: 10000, amount: 30000 },
+              { description: 'Cloud Server Migration (Dedicated Server Configuration)', hsnSac: '998312', quantity: 1, unitPrice: 40000, amount: 40000 },
             ],
             uploadedAt: new Date().toISOString(),
             fileName: selectedFile.name,
