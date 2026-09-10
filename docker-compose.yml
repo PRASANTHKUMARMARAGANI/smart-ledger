@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # 1. SmartLedger Next.js Web App
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=redis://redis:6379
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      - redis
+    restart: always
+
+  # 2. Redis Event Queue & Cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+
+  # 3. Background Worker Node for Async Job Queue
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["node", "server.js"]
+    environment:
+      - NODE_ENV=production
+      - IS_WORKER_NODE=true
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    restart: always
+
+volumes:
+  redis_data:
