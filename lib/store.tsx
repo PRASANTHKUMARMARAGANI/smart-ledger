@@ -42,17 +42,25 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
       }
 
-      // Fallback to local storage or demo initial data
+      // Load local storage or populate initial 100 demo documents across 13 companies
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
-          setDocuments(JSON.parse(saved));
-        } else {
-          setDocuments(INITIAL_DOCUMENTS);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_DOCUMENTS));
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length >= 50) {
+            setDocuments(parsed);
+            return;
+          }
         }
-      } catch {
-        setDocuments(INITIAL_DOCUMENTS);
+      } catch (e) {
+        console.warn('LocalStorage load notice', e);
+      }
+
+      setDocuments(INITIAL_DOCUMENTS);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_DOCUMENTS));
+      } catch (e) {
+        console.error(e);
       }
     }
 

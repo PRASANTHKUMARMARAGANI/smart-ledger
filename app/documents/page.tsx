@@ -9,7 +9,7 @@ import { StatusBadge } from '@/components/document/StatusBadge';
 export default function AllDocumentsPage() {
   const router = useRouter();
   const { documents } = useDocuments();
-  const [filter, setFilter] = useState<'All' | 'Ready for Review' | 'Needs Review' | 'Approved'>('All');
+  const [filter, setFilter] = useState<'All' | 'VERIFIED' | 'Needs Review' | 'Approved' | 'DUPLICATE' | 'Extraction Failed'>('All');
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredDocs = documents.filter((doc) => {
@@ -29,9 +29,9 @@ export default function AllDocumentsPage() {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Documents</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Documents ({documents.length})</h1>
           <p className="text-xs text-slate-500 mt-1">
-            All uploaded invoices, receipts, and extracted financial records.
+            All 100 uploaded invoices, receipts, and extracted financial records across 13 companies.
           </p>
         </div>
 
@@ -47,11 +47,11 @@ export default function AllDocumentsPage() {
       {/* Filter Tabs & Search */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div className="flex items-center gap-1.5 p-1 bg-white border border-slate-200 rounded-xl overflow-x-auto">
-          {(['All', 'Ready for Review', 'Needs Review', 'Approved'] as const).map((tab) => (
+          {(['All', 'VERIFIED', 'Needs Review', 'Approved', 'DUPLICATE', 'Extraction Failed'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setFilter(tab)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
                 filter === tab
                   ? 'bg-slate-900 text-white font-semibold shadow-sm'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
