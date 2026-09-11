@@ -3,12 +3,12 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDocuments } from '@/lib/store';
-import { FileText, Search, Plus, ArrowRight } from 'lucide-react';
+import { FileText, Search, Plus, ArrowRight, RotateCcw } from 'lucide-react';
 import { StatusBadge } from '@/components/document/StatusBadge';
 
 export default function AllDocumentsPage() {
   const router = useRouter();
-  const { documents } = useDocuments();
+  const { documents, resetDemoData } = useDocuments();
   const [filter, setFilter] = useState<'All' | 'VERIFIED' | 'Needs Review' | 'Approved' | 'DUPLICATE' | 'Extraction Failed'>('All');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -35,13 +35,24 @@ export default function AllDocumentsPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => router.push('/upload')}
-          className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Upload Document</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={resetDemoData}
+            title="Reload 100 production demo documents across 13 companies"
+            className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Reset Demo Records</span>
+          </button>
+
+          <button
+            onClick={() => router.push('/upload')}
+            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Upload Document</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter Tabs & Search */}

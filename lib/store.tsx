@@ -23,44 +23,42 @@ const STORAGE_KEY = 'ledger_agent_documents_v1';
 const DocumentContext = createContext<DocumentContextType | undefined>(undefined);
 
 export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [documents, setDocuments] = useState<LedgerDocument[]>([]);
+  const [documents, setDocuments] = useState<LedgerDocument[]>(INITIAL_DOCUMENTS);
   const [isCloudSynced, setIsCloudSynced] = useState<boolean>(false);
 
-  // Load initial documents from Supabase PostgreSQL if configured, or localStorage
+  // Load documents from localStorage or Supabase PostgreSQL if configured
   useEffect(() => {
     async function loadDocuments() {
+      // First check local storage cache
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length >= 10) {
+            setDocuments(parsed);
+          } else {
+            setDocuments(INITIAL_DOCUMENTS);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_DOCUMENTS));
+          }
+        } else {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_DOCUMENTS));
+        }
+      } catch (e) {
+        console.warn('LocalStorage load notice', e);
+      }
+
+      // Second check Supabase Cloud Database if configured
       if (isSupabaseConfigured()) {
         try {
-          const { data, error } = await supabase.from('documents').select('*').order('created_at', { ascending: false });
+          const { data, error } = await supabase.from('documents').select('*');
           if (!error && data && data.length > 0) {
             setDocuments(data);
             setIsCloudSynced(true);
             return;
           }
         } catch (e) {
-          console.warn('Supabase fetch failed, falling back to local store', e);
+          console.warn('Supabase fetch notice', e);
         }
-      }
-
-      // Load local storage or populate initial 100 demo documents across 13 companies
-      try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length >= 50) {
-            setDocuments(parsed);
-            return;
-          }
-        }
-      } catch (e) {
-        console.warn('LocalStorage load notice', e);
-      }
-
-      setDocuments(INITIAL_DOCUMENTS);
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_DOCUMENTS));
-      } catch (e) {
-        console.error(e);
       }
     }
 
