@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useDocuments } from '@/lib/store';
 import { DocumentPreview } from '@/components/document/DocumentPreview';
 import { StatusBadge } from '@/components/document/StatusBadge';
-import { Check, AlertTriangle, Edit3, ArrowLeft, CheckCircle2, XCircle, Building2, Calendar, Receipt, FileText } from 'lucide-react';
+import { Check, AlertTriangle, Edit3, ArrowLeft, CheckCircle2, XCircle } from 'lucide-react';
 
 export default function DocumentDetailsPage() {
   const params = useParams();
@@ -38,13 +38,13 @@ export default function DocumentDetailsPage() {
   if (!doc) {
     return (
       <div className="text-center py-16 space-y-4">
-        <h2 className="text-xl font-bold text-white">Document not found</h2>
-        <p className="text-xs text-slate-400">The document you are looking for does not exist or has been removed.</p>
+        <h2 className="text-xl font-bold text-slate-900">Document not found</h2>
+        <p className="text-xs text-slate-500">The document you are looking for does not exist or has been removed.</p>
         <button
-          onClick={() => router.push('/documents')}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold"
+          onClick={() => router.push('/dashboard')}
+          className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold"
         >
-          Back to Documents
+          Back to Dashboard
         </button>
       </div>
     );
@@ -58,6 +58,7 @@ export default function DocumentDetailsPage() {
       date,
       totalAmount: Number(totalAmount),
       category,
+      // If amount was fixed, clear mismatch
       calculatedTotal: Number(totalAmount),
       issueDescription: null,
       status: 'Ready for Review',
@@ -84,81 +85,87 @@ export default function DocumentDetailsPage() {
     <div className="space-y-6 animate-fadeIn">
       {/* Top back navigation */}
       <button
-        onClick={() => router.push('/documents')}
-        className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-indigo-400 transition-colors"
+        onClick={() => router.push('/dashboard')}
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
-        <span>Back to Document Repository</span>
+        <span>Back to Dashboard</span>
       </button>
 
-      {/* PROBLEM DETECTION BANNER (IF ISSUE PRESENT) */}
+      {/* SECTION 9: PROBLEM DETECTION BANNER (IF ISSUE PRESENT) */}
       {doc.status === 'Needs Review' && !isApprovedSuccess && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-3xl p-5 shadow-xl space-y-3">
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 shadow-sm space-y-3">
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center shrink-0 mt-0.5 border border-amber-500/30">
-              <AlertTriangle className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
+              <AlertTriangle className="w-4 h-4" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-sm font-bold text-amber-200">
-                ⚠ Arithmetic Audit Discrepancy Flagged
+              <h3 className="text-sm font-bold text-amber-900">
+                ⚠ Something needs your attention
               </h3>
-              <div className="text-xs text-amber-300 space-x-4 pt-1 font-mono">
-                <span>Extracted Total: <strong>₹{doc.totalAmount.toLocaleString('en-IN')}</strong></span>
-                <span>Calculated Total: <strong>₹{doc.calculatedTotal.toLocaleString('en-IN')}</strong></span>
+              <p className="text-xs font-semibold text-amber-800">
+                Amount mismatch
+              </p>
+              <div className="text-xs text-amber-800 space-x-4 pt-1 font-mono">
+                <span>Invoice total: <strong>₹{doc.totalAmount.toLocaleString('en-IN')}</strong></span>
+                <span>Calculated total: <strong>₹{doc.calculatedTotal.toLocaleString('en-IN')}</strong></span>
               </div>
-              <p className="text-xs text-amber-400/90 pt-0.5">
-                {doc.issueDescription || 'Please review items before approving into general ledger.'}
+              <p className="text-xs text-amber-700 pt-1">
+                Please review this document before approving it.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pt-2 border-t border-amber-500/20">
+          <div className="flex items-center gap-2 pt-2 border-t border-amber-200/60">
             <button
               onClick={() => setIsEditing(true)}
-              className="px-4 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-xs font-bold rounded-xl border border-amber-500/40 transition-colors"
+              className="px-3.5 py-1.5 bg-amber-800 hover:bg-amber-900 text-white text-xs font-semibold rounded-xl transition-colors"
             >
-              Correct Details
+              Edit Details
             </button>
           </div>
         </div>
       )}
 
-      {/* APPROVED SUCCESS BANNER */}
+      {/* SECTION 8: APPROVED SUCCESS CARD */}
       {isApprovedSuccess || doc.status === 'Approved' ? (
-        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-3xl p-6 text-center space-y-3 shadow-xl">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/30">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center space-y-4 shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
             <CheckCircle2 className="w-7 h-7" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-emerald-300 font-display">✓ Approved into General Ledger</h2>
-            <p className="text-xs text-emerald-400/80 mt-0.5">
-              Verified financial item posted to accounting ledger with CA audit clearance.
+            <h2 className="text-lg font-bold text-emerald-900">✓ Approved</h2>
+            <p className="text-xs font-semibold text-emerald-800 mt-1">
+              This transaction has been added to your records.
             </p>
           </div>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl shadow-md transition-colors"
+          >
+            Back to Dashboard
+          </button>
         </div>
       ) : null}
 
-      {/* TWO-COLUMN LAYOUT */}
+      {/* SECTION 6: TWO-COLUMN RESULTS LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* LEFT COLUMN: DOCUMENT PREVIEW */}
         <div className="lg:col-span-6">
           <DocumentPreview doc={doc} />
         </div>
 
-        {/* RIGHT COLUMN: EXTRACTED DETAILS & AUDIT CHECKS */}
+        {/* RIGHT COLUMN: DOCUMENT DETAILS & CHECKS */}
         <div className="lg:col-span-6 space-y-6">
-          <div className="glass-panel rounded-3xl border border-slate-800 p-6 sm:p-8 shadow-2xl space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <div>
-                <h2 className="text-lg font-bold text-white font-display">Extracted Record Details</h2>
-                <p className="text-xs text-slate-400 font-mono">ID: {doc.id}</p>
-              </div>
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <h2 className="text-lg font-bold text-slate-900">Document Details</h2>
               <button
                 onClick={() => setIsEditing(!isEditing)}
-                className="text-xs text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700"
+                className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1"
               >
                 <Edit3 className="w-3.5 h-3.5" />
-                <span>{isEditing ? 'Cancel' : 'Edit Fields'}</span>
+                <span>{isEditing ? 'Cancel Edit' : 'Edit'}</span>
               </button>
             </div>
 
@@ -166,53 +173,53 @@ export default function DocumentDetailsPage() {
               /* INLINE EDIT FORM */
               <form onSubmit={handleSaveEdit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Company / Vendor Name</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Vendor</label>
                   <input
                     type="text"
                     value={vendor}
                     onChange={(e) => setVendor(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">Invoice Number</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Invoice Number</label>
                     <input
                       type="text"
                       value={invoiceNumber}
                       onChange={(e) => setInvoiceNumber(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono font-semibold text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">Invoice Date</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Date</label>
                     <input
                       type="text"
                       value={date}
                       onChange={(e) => setDate(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">Total Amount (₹)</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Amount (₹)</label>
                     <input
                       type="number"
                       value={totalAmount}
                       onChange={(e) => setTotalAmount(Number(e.target.value))}
-                      className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono font-semibold text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">Accounting Category</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Category</label>
                     <input
                       type="text"
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
                     />
                   </div>
                 </div>
@@ -220,14 +227,14 @@ export default function DocumentDetailsPage() {
                 <div className="flex items-center gap-2 pt-2">
                   <button
                     type="submit"
-                    className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md"
+                    className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold"
                   >
-                    Save & Re-verify
+                    Save Changes
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsEditing(false)}
-                    className="px-4 py-2.5 bg-slate-800 text-slate-300 rounded-xl text-xs font-bold"
+                    className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold"
                   >
                     Cancel
                   </button>
@@ -237,103 +244,145 @@ export default function DocumentDetailsPage() {
               /* READONLY DISPLAY FIELDS */
               <div className="space-y-4 text-sm">
                 <div>
-                  <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider block">Vendor & Supplier</span>
-                  <span className="font-extrabold text-white text-lg font-display">{doc.vendor}</span>
-                  {doc.vendorGstin && <p className="text-xs text-indigo-400 font-mono mt-0.5">GSTIN: {doc.vendorGstin}</p>}
-                  {doc.vendorAddress && <p className="text-xs text-slate-400 mt-1 leading-relaxed">{doc.vendorAddress}</p>}
+                  <span className="text-xs text-slate-400 font-medium block uppercase tracking-wider">Vendor & Supplier</span>
+                  <span className="font-extrabold text-slate-900 text-base">{doc.vendor}</span>
+                  {doc.vendorGstin && <p className="text-xs text-slate-500 font-mono mt-0.5">GSTIN: {doc.vendorGstin}</p>}
+                  {doc.vendorAddress && <p className="text-xs text-slate-500">{doc.vendorAddress}</p>}
                 </div>
 
-                <div className="pt-3 border-t border-slate-800 grid grid-cols-2 gap-4">
+                <div className="pt-3 border-t border-slate-100 grid grid-cols-2 gap-4">
                   <div>
-                    <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider block">Invoice Number</span>
-                    <span className="font-bold text-white font-mono">{doc.invoiceNumber}</span>
+                    <span className="text-xs text-slate-400 font-medium block uppercase tracking-wider">Invoice Number</span>
+                    <span className="font-bold text-slate-900 font-mono">{doc.invoiceNumber}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider block">Invoice Date</span>
-                    <span className="font-semibold text-slate-200">{doc.date}</span>
+                    <span className="text-xs text-slate-400 font-medium block uppercase tracking-wider">Invoice Date</span>
+                    <span className="font-semibold text-slate-800">{doc.date}</span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider block">Due Date</span>
-                    <span className="font-semibold text-slate-300">{doc.dueDate || 'Net 30 Days'}</span>
+                    <span className="text-xs text-slate-400 font-medium block uppercase tracking-wider">Due Date</span>
+                    <span className="font-semibold text-slate-800">{doc.dueDate || 'Not Specified'}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider block">PO Number</span>
-                    <span className="font-semibold text-slate-300 font-mono">{doc.poNumber || 'PO-8840'}</span>
+                    <span className="text-xs text-slate-400 font-medium block uppercase tracking-wider">PO Number</span>
+                    <span className="font-semibold text-slate-800 font-mono">{doc.poNumber || 'Not Specified'}</span>
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-slate-800 space-y-2">
-                  <div className="flex justify-between text-xs text-slate-400">
+                {doc.billToCustomer && (
+                  <div className="pt-3 border-t border-slate-100">
+                    <span className="text-xs text-slate-400 font-medium block uppercase tracking-wider">Billed Customer</span>
+                    <span className="font-bold text-slate-900">{doc.billToCustomer}</span>
+                    {doc.billToGstin && <p className="text-xs text-slate-500 font-mono">GSTIN: {doc.billToGstin}</p>}
+                  </div>
+                )}
+
+                <div className="pt-3 border-t border-slate-100 space-y-2">
+                  <div className="flex justify-between text-xs text-slate-600">
                     <span>Subtotal:</span>
-                    <span className="font-mono font-semibold text-slate-200">₹{doc.subtotal.toLocaleString('en-IN')}</span>
+                    <span className="font-mono font-semibold">₹{doc.subtotal.toLocaleString('en-IN')}</span>
                   </div>
                   {doc.taxGst > 0 && (
-                    <div className="flex justify-between text-xs text-slate-400">
-                      <span>{doc.taxLabel || 'Tax / GST (18%)'}:</span>
-                      <span className="font-mono font-semibold text-slate-200">₹{doc.taxGst.toLocaleString('en-IN')}</span>
+                    <div className="flex justify-between text-xs text-slate-600">
+                      <span>{doc.taxLabel || 'Tax / GST'}:</span>
+                      <span className="font-mono font-semibold">₹{doc.taxGst.toLocaleString('en-IN')}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-base font-extrabold text-white pt-2 border-t border-slate-800">
+                  <div className="flex justify-between text-base font-black text-slate-900 pt-1 border-t border-slate-200">
                     <span>Total Amount (INR):</span>
-                    <span className="font-mono text-indigo-400 text-lg">₹{doc.totalAmount.toLocaleString('en-IN')}</span>
+                    <span className="font-mono text-indigo-700">₹{doc.totalAmount.toLocaleString('en-IN')}</span>
                   </div>
                 </div>
+
+                {doc.amountInWords && (
+                  <div className="pt-2">
+                    <span className="text-[11px] text-slate-400 font-medium block">Amount in Words</span>
+                    <p className="text-xs text-slate-700 font-medium italic">{doc.amountInWords}</p>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* AUDIT CHECK RESULTS */}
-            <div className="border-t border-slate-800 pt-5 space-y-3">
-              <h3 className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest">
-                AI Agent Verification Pipeline Checks
+            {/* SECTION 7: CHECK RESULTS */}
+            <div className="border-t border-slate-100 pt-5 space-y-3">
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Checks
               </h3>
 
-              <div className="space-y-2.5 text-xs font-semibold">
-                <div className={`flex items-center gap-2.5 p-2 rounded-xl border ${
-                  doc.checks.requiredInfoFound ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' : 'bg-amber-500/10 border-amber-500/20 text-amber-300'
-                }`}>
-                  {doc.checks.requiredInfoFound ? <Check className="w-4 h-4 text-emerald-400 shrink-0" /> : <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />}
-                  <span>{doc.checks.requiredInfoFound ? 'Required Info Present (Vendor, Date, Amount)' : 'Required Information Incomplete'}</span>
+              <div className="space-y-2 text-xs font-medium">
+                {/* 1. Required Info Check */}
+                <div
+                  className={`flex items-center gap-2 ${
+                    doc.checks.requiredInfoFound ? 'text-emerald-700' : 'text-amber-800 font-bold'
+                  }`}
+                >
+                  {doc.checks.requiredInfoFound ? (
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  )}
+                  <span>
+                    {doc.checks.requiredInfoFound ? 'Required information found' : 'Required information incomplete'}
+                  </span>
                 </div>
 
-                <div className={`flex items-center gap-2.5 p-2 rounded-xl border ${
-                  doc.checks.amountVerified ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' : 'bg-amber-500/10 border-amber-500/20 text-amber-300'
-                }`}>
-                  {doc.checks.amountVerified ? <Check className="w-4 h-4 text-emerald-400 shrink-0" /> : <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />}
-                  <span>{doc.checks.amountVerified ? 'Arithmetic Calculation Verified' : 'Arithmetic Discrepancy Flagged'}</span>
+                {/* 2. Amount Verified Check */}
+                <div
+                  className={`flex items-center gap-2 ${
+                    doc.checks.amountVerified ? 'text-emerald-700' : 'text-amber-800 font-bold'
+                  }`}
+                >
+                  {doc.checks.amountVerified ? (
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  )}
+                  <span>
+                    {doc.checks.amountVerified ? 'Amount verified' : 'Amount mismatch detected'}
+                  </span>
                 </div>
 
-                <div className={`flex items-center gap-2.5 p-2 rounded-xl border ${
-                  doc.checks.noDuplicateFound ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' : 'bg-rose-500/10 border-rose-500/20 text-rose-300'
-                }`}>
-                  {doc.checks.noDuplicateFound ? <Check className="w-4 h-4 text-emerald-400 shrink-0" /> : <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />}
-                  <span>{doc.checks.noDuplicateFound ? 'No Duplicate Invoice Record' : 'Duplicate Invoice Warning'}</span>
+                {/* 3. Duplicate Check */}
+                <div
+                  className={`flex items-center gap-2 ${
+                    doc.checks.noDuplicateFound ? 'text-emerald-700' : 'text-rose-800 font-bold'
+                  }`}
+                >
+                  {doc.checks.noDuplicateFound ? (
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                  )}
+                  <span>
+                    {doc.checks.noDuplicateFound ? 'No duplicate found' : 'Duplicate invoice detected'}
+                  </span>
                 </div>
               </div>
 
-              <div className="pt-3 flex items-center justify-between border-t border-slate-800">
-                <span className="text-xs text-slate-400 font-mono font-bold uppercase">Ledger Status</span>
+              <div className="pt-3 flex items-center justify-between border-t border-slate-100">
+                <span className="text-xs text-slate-400 font-semibold uppercase">Status</span>
                 <StatusBadge status={doc.status} />
               </div>
             </div>
 
-            {/* ACTION CONTROLS */}
+            {/* SECTION 8: ACCOUNTANT ACTIONS (APPROVE / EDIT / REJECT) */}
             {!isApprovedSuccess && doc.status !== 'Approved' && (
-              <div className="border-t border-slate-800 pt-6 space-y-3">
-                <div className="grid grid-cols-3 gap-2.5">
+              <div className="border-t border-slate-100 pt-6 space-y-3">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     onClick={handleApprove}
-                    className="py-3 px-4 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-1.5"
+                    className="py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5"
                   >
-                    <Check className="w-4 h-4 text-white" />
+                    <Check className="w-4 h-4 text-emerald-400" />
                     <span>Approve</span>
                   </button>
 
                   <button
                     onClick={() => setIsEditing(!isEditing)}
-                    className="py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition-colors flex items-center justify-center gap-1.5"
+                    className="py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
                     <span>Edit</span>
@@ -341,7 +390,7 @@ export default function DocumentDetailsPage() {
 
                   <button
                     onClick={handleReject}
-                    className="py-3 px-4 bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 font-bold text-xs rounded-xl border border-rose-500/30 transition-colors flex items-center justify-center gap-1.5"
+                    className="py-3 px-4 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-xs rounded-xl border border-rose-200 transition-colors flex items-center justify-center gap-1.5"
                   >
                     <XCircle className="w-3.5 h-3.5" />
                     <span>Reject</span>

@@ -1,4 +1,4 @@
-export type DocumentStatus = 'VERIFIED' | 'Needs Review' | 'DUPLICATE' | 'Extraction Failed' | 'Approved' | 'Rejected' | 'Ready for Review' | 'Verified' | 'Duplicate';
+export type DocumentStatus = 'VERIFIED' | 'Needs Review' | 'DUPLICATE' | 'Extraction Failed' | 'Approved' | 'Rejected' | 'Ready for Review' | 'Verified' | 'Duplicate' | 'Processed';
 
 export interface DocumentCheck {
   requiredInfoFound: boolean;

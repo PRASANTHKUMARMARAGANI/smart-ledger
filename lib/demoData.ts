@@ -196,28 +196,35 @@ export function generate100DemoDocuments(): LedgerDocument[] {
     const totalAmount = subtotal + taxGst;
 
     // Determine status distribution across 100 records
-    let status: LedgerDocument['status'] = 'VERIFIED';
+    let status: LedgerDocument['status'] = 'Approved';
     let issueDescription: string | null = null;
     let requiredInfoFound = true;
     let amountVerified = true;
     let noDuplicateFound = true;
 
-    if (i % 7 === 0) {
+    if (i % 5 === 1) {
       status = 'Needs Review';
       amountVerified = false;
-      issueDescription = `Arithmetic Discrepancy: Extracted Total is INR ${totalAmount.toLocaleString()}, but subtotal + tax check requires review.`;
-    } else if (i % 13 === 0) {
+      issueDescription = `Arithmetic Discrepancy: Extracted Total is INR ${totalAmount.toLocaleString()}, subtotal + GST check requires review.`;
+    } else if (i % 7 === 3) {
+      status = 'Rejected';
+      amountVerified = false;
+      issueDescription = `Audit Policy Rejection: GSTIN verification mismatch or invalid vendor billing address.`;
+    } else if (i % 20 === 9) {
       status = 'DUPLICATE';
       noDuplicateFound = false;
-      issueDescription = `Duplicate Invoice Warning: Invoice #${comp.prefix}${1000 + i} already exists in database.`;
-    } else if (i % 11 === 0) {
-      status = 'Approved';
-      issueDescription = null;
-    } else if (i % 17 === 0) {
+      issueDescription = `Duplicate Invoice Warning: Invoice #${comp.prefix}${1000 + i} already exists in ledger registry.`;
+    } else if (i % 20 === 19) {
       status = 'Extraction Failed';
       requiredInfoFound = false;
       amountVerified = false;
-      issueDescription = 'OCR Text Stream unreadable or low resolution image file.';
+      issueDescription = 'OCR Text Stream unreadable or low resolution PDF scan.';
+    } else if (i % 6 === 5) {
+      status = 'VERIFIED';
+      issueDescription = null;
+    } else {
+      status = 'Approved';
+      issueDescription = null;
     }
 
     // Generate dates ranging from Jan 2025 to Sep 2026
