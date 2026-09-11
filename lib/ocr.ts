@@ -16,23 +16,42 @@ export interface OcrResult {
  */
 async function recognizeImageBuffer(imageBuffer: Buffer): Promise<string> {
   let worker: Worker | null = null;
-  try {
-    worker = await createWorker('eng');
-    const res = await worker.recognize(imageBuffer);
-    const text = (res.data.text || '').trim();
-    await worker.terminate();
-    return text;
-  } catch (err) {
-    if (worker) {
-      try {
-        await worker.terminate();
-      } catch (e) {
-        // ignore cleanup error
+
+  const ocrPromise = (async () => {
+    try {
+      worker = await createWorker('eng');
+      const res = await worker.recognize(imageBuffer);
+      const text = (res.data.text || '').trim();
+      await worker.terminate();
+      return text;
+    } catch (err) {
+      if (worker) {
+        try {
+          await worker.terminate();
+        } catch (e) {
+          // ignore cleanup error
+        }
       }
+      console.warn('Tesseract OCR worker notice:', err);
+      return '';
     }
-    console.warn('Tesseract OCR worker notice in production container:', err);
-    return '';
-  }
+  })();
+
+  const timeoutPromise = new Promise<string>((resolve) => {
+    setTimeout(() => {
+      console.warn('Tesseract OCR 3.5s timeout reached - triggering instant template fallback');
+      if (worker) {
+        try {
+          worker.terminate();
+        } catch (e) {
+          // ignore
+        }
+      }
+      resolve('');
+    }, 3500);
+  });
+
+  return Promise.race([ocrPromise, timeoutPromise]);
 }
 
 /**
